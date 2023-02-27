@@ -8,11 +8,13 @@ import datetime
 import os
 import time
 import re
-import sys
 
 import pytz
 
 import pandas as pd
+
+import sys
+sys.path.append("..")
 
 from ProjectBot import ProjectBot
 from LarkBot import LarkBot
