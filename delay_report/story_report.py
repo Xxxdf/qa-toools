@@ -16,9 +16,9 @@ import pandas as pd
 
 sys.path.append("..")
 
-from ..ProjectBot import ProjectBot
-from ..LarkBot import LarkBot
-from ..utils import style_df
+from ProjectBot import ProjectBot
+from LarkBot import LarkBot
+from utils import style_df
 
 
 def timestamp_2_dt(timestamp):
