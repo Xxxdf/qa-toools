@@ -14,7 +14,7 @@ import pytz
 
 import pandas as pd
 
-sys.path.append("..")
+sys.path.append(os.path.abspath(os.path.dirname(os.getcwd())))
 
 from ProjectBot import ProjectBot
 from LarkBot import LarkBot
@@ -340,6 +340,7 @@ class MessageBot(LarkBot):
 if __name__ == "__main__":
     # view_id = "qpOifQJ4R"   # 视图的id
     # file_name = "64迭代需求单delay详情.xlsx"
+
     view_id, title = sys.argv[1:]
     file_name = f"{title}.xlsx"
 
