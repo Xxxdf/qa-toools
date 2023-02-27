@@ -14,7 +14,7 @@ import pytz
 
 import pandas as pd
 
-# sys.path.append("..")
+sys.path.append("..")
 
 from ..ProjectBot import ProjectBot
 from ..LarkBot import LarkBot
