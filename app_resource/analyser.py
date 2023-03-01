@@ -150,7 +150,7 @@ class SQLOperator(object):
 
 
 if __name__ == "__main__":
-    # get_trunk_csv()
+    get_trunk_csv()
     #
     a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
     a.pack_resource()
