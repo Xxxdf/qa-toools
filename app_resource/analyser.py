@@ -23,6 +23,7 @@ def get_trunk_csv():
     file_list = ["LoadRes.csv", "LoadResInPackFile_and.csv", "LoadResInPackFile_ios.csv"]
     for file in file_list:
         file_url = f"{url}{file}"
+        print(file_url)
         req = requests.get(file_url, stream=True)
         with open(file, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):  # 每次加载1024字节
