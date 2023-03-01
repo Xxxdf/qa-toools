@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /.idea/*
+/burypoint/统计结果.xlsx
+/app_resource/*.csv
+/app_resource/*.xlsx

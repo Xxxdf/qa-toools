@@ -4,7 +4,6 @@
 # @File    : utils.py 
 # @Desc    :
 
-
 import numpy as np
 
 
@@ -36,8 +35,6 @@ def style_df(df, writer_obj, sheet_name):
 
     for i, width in enumerate(widths):
         worksheet.set_column(i, i, width, workbook.add_format(style))
-
-
 
 if __name__ == "__main__":
     pass
