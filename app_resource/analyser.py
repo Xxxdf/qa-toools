@@ -126,6 +126,7 @@ class SQLOperator(object):
 
     def __init__(self, table="pack_resource"):
         self.engine = create_engine(f"sqlite:///{os.getcwd()}/app_resource.db")
+        print(self.engine)
         metadata = MetaData()
         db_session = sessionmaker(bind=self.engine)
 
