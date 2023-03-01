@@ -8,9 +8,8 @@ import time
 
 import requests
 import pandas as pd
-from sqlalchemy import MetaData, Table
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import MetaData, Table, create_engine, inspect, Column, Integer, String, Float, DateTime
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 
 # 资源种类
@@ -23,7 +22,6 @@ def get_trunk_csv():
     file_list = ["LoadRes.csv", "LoadResInPackFile_and.csv", "LoadResInPackFile_ios.csv"]
     for file in file_list:
         file_url = f"{url}{file}"
-        print(file_url)
         req = requests.get(file_url, stream=True)
         with open(file, "wb") as f:
             for chunk in req.iter_content(chunk_size=1024):  # 每次加载1024字节
@@ -122,16 +120,52 @@ class Analyser(object):
         return round(size, 2)
 
 
+Base = declarative_base()
+
+
+class Pack(Base):
+    __tablename__ = "InPack"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    Lua = Column(Float)
+    UI = Column(Float)
+    Art = Column(Float)
+    Table = Column(Float)
+    Scene = Column(Float)
+    Audio = Column(Float)
+    Video = Column(Float)
+    Branch = Column(String)
+    Type = Column(String)
+    Time = Column(DateTime)
+
+
 class SQLOperator(object):
 
     def __init__(self, table="pack_resource"):
         self.engine = create_engine(f"sqlite:///{os.getcwd()}/app_resource.db")
-        print(self.engine)
         metadata = MetaData()
         db_session = sessionmaker(bind=self.engine)
 
-        self.session = db_session()
-        self.table = Table(table, metadata, autoload_with=self.engine)
+        # self.session = db_session()
+        # self.table = Table(table, metadata, autoload_with=self.engine)
+
+    def create_table(self):
+        # metadata = MetaData()
+        # user_table = Table('user', metadata,
+        #                    Column("id", Integer, primary_key=True),
+        #                    Column("Lua", Float),
+        #                    Column("UI", Float),
+        #                    Column("Art", Float),
+        #                    Column("Table", Float),
+        #                    Column("Scene", Float),
+        #                    Column("Audio", Float),
+        #                    Column("Video", Float),
+        #                    Column("Branch", String),
+        #                    Column("Type", String),
+        #                    Column("Time", DateTime)
+        #                    )
+        # metadata.create_all(bind=self.engine)
+        Base.metadata.create_all(self.engine)
 
     def insert_data(self, dict_):
         """
@@ -152,11 +186,12 @@ class SQLOperator(object):
 
 
 if __name__ == "__main__":
-    get_trunk_csv()
+    # get_trunk_csv()
     #
-    a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
-    a.pack_resource()
+    # a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
+    # a.pack_resource()
     # a.missing_id()
 
-    # operator = SQLOperator()
+    operator = SQLOperator()
+    operator.create_table()
     # operator.insert_data(dict())

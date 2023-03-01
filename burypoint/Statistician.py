@@ -13,6 +13,9 @@ import pandas as pd
 
 from utils import style_df
 
+# 时长
+INTERVAL = 60
+
 metadata = MetaData()
 
 # 获取所有表的名字
@@ -66,18 +69,34 @@ class Statistician(object):
         :param sheet: 对应sheet的名
         :return:
         """
-
-        grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均解压时间(秒)": "mean",
+        # 第一次聚合，按照uuid聚合，
+        grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均解压时间(秒)": sum,
                                                  "最长解压时间(秒)": max, "最短解压时间(秒)": min})
         grouped["平均解压时间(秒)"] = grouped["平均解压时间(秒)"].map(lambda x: round(x, 2))
-        grouped.sort_values("平均解压时间(秒)", inplace=True)
-
         grouped.reset_index(inplace=True)
         device_info = grouped["client_uuid"].apply(self.get_client_info)
         grouped["所属平台"], grouped["设备信息"] = zip(*device_info)
 
-        order = ["client_uuid", "设备信息", "所属平台", "有效数据(组)", "平均解压时间(秒)", "最短解压时间(秒)", "最长解压时间(秒)"]
-        self.write_2_excel(grouped[order], sheet_name=sheet)
+        device_dict = dict(zip(grouped["设备信息"].tolist(), grouped["所属平台"].tolist()))
+
+        # 第二次聚合，按照设备信息聚合
+        res = grouped.groupby("设备信息").agg(
+            {"有效数据(组)": sum, "平均解压时间(秒)": sum, "最长解压时间(秒)": max, "最短解压时间(秒)": min})
+        res.reset_index(inplace=True)
+        res["平均解压时间(秒)"] = res.apply(self.get_mean, axis=1)
+        res.sort_values("平均解压时间(秒)", inplace=True)
+        res["所属平台"] = res["设备信息"].map(lambda x: device_dict[x])
+
+        # 最后过滤掉Unknown的设备
+        final = res[res["设备信息"] != "Unknown"]
+        order = ["设备信息", "所属平台", "有效数据(组)", "平均解压时间(秒)", "最短解压时间(秒)", "最长解压时间(秒)"]
+        self.write_2_excel(final[order], sheet_name=sheet)
+
+    @staticmethod
+    def get_mean(series):
+        total = series["有效数据(组)"]
+        sum_ = series["平均解压时间(秒)"]
+        return round(sum_/total, 2)
 
     def get_client_info(self, uuid):
         # 先尝试从json中取
@@ -98,7 +117,7 @@ class Statistician(object):
                 return f"{os_type}({os_version})", device_info
         # 如果还是拿不到device_info，那就取最后一条
         row = self.session.query(table).filter_by(client_uuid=uuid).order_by(-table.c.time).first()
-        return f"{row.os_type}({row.os_version})", row.device_info
+        return f"{row.os_type}({row.os_version})", "Unknown"
 
     @staticmethod
     def filter_then_build(query_obj, start_step, end_step):
@@ -127,8 +146,10 @@ class Statistician(object):
                 if check_time is not None:
                     end_time = row.time
                     cost = (end_time-check_time).seconds
-                    # 设备的uuid、开始解压时间、结束解压时间、解压过程耗时
-                    data.append([uuid_, "", cost, cost, cost])
+                    # 超过60s的数据不算
+                    if cost < INTERVAL:
+                        # 设备的uuid、开始解压时间、结束解压时间、解压过程耗时
+                        data.append([uuid_, "", cost, cost, cost])
 
         df = pd.DataFrame(data, columns=["client_uuid", "有效数据(组)", "平均解压时间(秒)",
                                          "最长解压时间(秒)", "最短解压时间(秒)"])
