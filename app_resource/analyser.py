@@ -4,7 +4,7 @@
 # @File    : analyser.py 
 # @Desc    : 包体资源分析
 import os
-import time
+import datetime
 
 import requests
 import pandas as pd
@@ -55,7 +55,7 @@ class Analyser(object):
 
     def pack_resource(self):
         """IOS/Android数据写入"""
-        operator = SQLOperator(table="pack_resource")
+        operator = SQLOperator(table="InPack")
 
         # apk写入
         apk_detail = self._android_pack()
@@ -146,25 +146,10 @@ class SQLOperator(object):
         metadata = MetaData()
         db_session = sessionmaker(bind=self.engine)
 
-        # self.session = db_session()
-        # self.table = Table(table, metadata, autoload_with=self.engine)
+        self.session = db_session()
+        self.table = Table(table, metadata, autoload_with=self.engine)
 
     def create_table(self):
-        # metadata = MetaData()
-        # user_table = Table('user', metadata,
-        #                    Column("id", Integer, primary_key=True),
-        #                    Column("Lua", Float),
-        #                    Column("UI", Float),
-        #                    Column("Art", Float),
-        #                    Column("Table", Float),
-        #                    Column("Scene", Float),
-        #                    Column("Audio", Float),
-        #                    Column("Video", Float),
-        #                    Column("Branch", String),
-        #                    Column("Type", String),
-        #                    Column("Time", DateTime)
-        #                    )
-        # metadata.create_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
     def insert_data(self, dict_):
@@ -173,7 +158,7 @@ class SQLOperator(object):
         :param dict_:
         :return:
         """
-        dict_["Time"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        dict_["Time"] = datetime.datetime.now()
         ins = self.table.insert().values(**dict_)
 
         conn = self.engine.connect()
@@ -186,12 +171,10 @@ class SQLOperator(object):
 
 
 if __name__ == "__main__":
-    # get_trunk_csv()
-    #
-    # a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
-    # a.pack_resource()
-    # a.missing_id()
+    get_trunk_csv()
 
-    operator = SQLOperator()
-    operator.create_table()
-    # operator.insert_data(dict())
+    a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
+    a.pack_resource()
+
+    # operator = SQLOperator()
+    # operator.create_table()
