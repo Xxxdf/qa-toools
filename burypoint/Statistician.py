@@ -3,18 +3,41 @@
 # @Time    : 2023/2/28 10:14
 # @File    : Statistician.py 
 # @Desc    : 从数据库中拉取埋点数据
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
+from collections import defaultdict
 
 from sqlalchemy import MetaData, Table
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import pyecharts.options as opts
+from pyecharts.charts import Bar, Line
+import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 from utils import style_df
 
-# 时长
-INTERVAL = 60
+UNZIP_INTERVAL = (5, 60)                                 # 最长解压时间
+
+WAIT_INTERVAL = (2, 30)                                  # 最长黑屏时间
+USER_NAME = "logstat"                               # 连接mysql的用户名
+PASSWORD = "Logstat123"                             # 密码
+HOST = "mlcn-aliyun-test.rwlb.rds.aliyuncs.com"     # host
+
+NAMES = ["解压时间", "解压后黑屏时间"]
+
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
+
+
+class MySqaLinker(object):
+
+    def __init__(self, db):
+        self.engine = create_engine(f"mysql://{USER_NAME}:{PASSWORD}@{HOST}/{db}?charset=utf8", echo=False)
+        db_session = sessionmaker(bind=self.engine)
+        self.session = db_session()
+
 
 metadata = MetaData()
 
@@ -23,87 +46,90 @@ metadata = MetaData()
 # print(inspector.get_table_names())
 
 
-class Statistician(object):
+class Statistician(MySqaLinker):
 
-    def __init__(self, user, pwd, host, db):
-        engine = create_engine(f"mysql://{user}:{pwd}@{host}/{db}?charset=utf8", echo=False)
-        db_session = sessionmaker(bind=engine)
-        self.session = db_session()
-        self.activate = Table("client_appinstall_activate", metadata, autoload_with=engine)
+    def __init__(self, db, day_delta, start_day: date):
+        super(Statistician, self).__init__(db)
+        self.activate = Table("client_appinstall_activate", metadata, autoload_with=self.engine)
 
-        with open("uuid_2_device.json", 'r') as load_f:
+        with open("uuid_2_device.json", "r") as load_f:
             self.dict_ = json.load(load_f)
 
-        self.writer = pd.ExcelWriter("统计结果.xlsx")
+        self.start = start_day
+        self.end = self.start + timedelta(days=day_delta)
+
+    def run(self, writer_obj):
+        data_tuple = self.get_resource_data()
+        self.sava()
+
+        writer_obj.analysis_on(start_date=self.start, end_date=self.end, df=data_tuple)
+
+
 
     def get_resource_data(self):
         """"""
-        now = datetime.now()
         activate = self.activate
+
         # 先筛选出所有最近三十天的数据，然后再筛选出所有开始解压-完成解压的数据，最后按照时间进行排序
-        q = (self.session.query(activate).filter(activate.c.time >= now - timedelta(days=30)).
+        q = (self.session.query(activate).filter(activate.c.time >= self.start, activate.c.time < self.end).
              filter(activate.c.step.in_(["MTLogoVideo01_Start", "UnZip_End", "MTLogoVideo02_Start"]))
              .order_by(activate.c.time))
 
         # 将有效数据构造成df，然后对其进行格式化
-        df = self.filter_then_build(q, start_step="MTLogoVideo01_Start", end_step="UnZip_End")
-        self.trim_df(df, sheet="解压时长")
+        df1 = self.filter_then_build(q, start_step="MTLogoVideo01_Start", end_step="UnZip_End", interval=UNZIP_INTERVAL)
+        # trimmed1 = self.trim_df(df)
 
         # 将有效数据构造成df，然后对其进行格式化
-        df2 = self.filter_then_build(q, start_step="UnZip_End", end_step="MTLogoVideo02_Start")
-        self.trim_df(df2, sheet="解压后黑屏时长")
+        df2 = self.filter_then_build(q, start_step="UnZip_End", end_step="MTLogoVideo02_Start", interval=WAIT_INTERVAL)
+        # trimmed2 = self.trim_df(df2)
+        return df1, df2
 
     def sava(self):
         """
         保存数据
         :return:
         """
-        self.writer.close()
         with open("uuid_2_device.json", "w") as f:
             json.dump(self.dict_, f)
 
-    def trim_df(self, df, sheet):
-        """
-        对统计出来的数据做聚合，然后写入excel
-        :param df:
-        :param sheet: 对应sheet的名
-        :return:
-        """
-        # 第一次聚合，按照uuid聚合，
-        grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均解压时间(秒)": sum,
-                                                 "最长解压时间(秒)": max, "最短解压时间(秒)": min})
-        grouped["平均解压时间(秒)"] = grouped["平均解压时间(秒)"].map(lambda x: round(x, 2))
-        grouped.reset_index(inplace=True)
-        device_info = grouped["client_uuid"].apply(self.get_client_info)
-        grouped["所属平台"], grouped["设备信息"] = zip(*device_info)
-
-        device_dict = dict(zip(grouped["设备信息"].tolist(), grouped["所属平台"].tolist()))
-
-        # 第二次聚合，按照设备信息聚合
-        res = grouped.groupby("设备信息").agg(
-            {"有效数据(组)": sum, "平均解压时间(秒)": sum, "最长解压时间(秒)": max, "最短解压时间(秒)": min})
-        res.reset_index(inplace=True)
-        res["平均解压时间(秒)"] = res.apply(self.get_mean, axis=1)
-        res.sort_values("平均解压时间(秒)", inplace=True)
-        res["所属平台"] = res["设备信息"].map(lambda x: device_dict[x])
-
-        # 最后过滤掉Unknown的设备
-        final = res[res["设备信息"] != "Unknown"]
-        order = ["设备信息", "所属平台", "有效数据(组)", "平均解压时间(秒)", "最短解压时间(秒)", "最长解压时间(秒)"]
-        self.write_2_excel(final[order], sheet_name=sheet)
+    # def trim_df(self, df):
+    #     """
+    #     对统计出来的数据做聚合，然后写入excel
+    #     :param df:
+    #     :return:
+    #     """
+    #     # 第一次聚合，按照uuid聚合，
+    #     grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均时间(秒)": sum,
+    #                                              "最长时间(秒)": max, "最短时间(秒)": min})
+    #     grouped["平均时间(秒)"] = grouped["平均时间(秒)"].map(lambda x: round(x, 2))
+    #     grouped.reset_index(inplace=True)
+    #     grouped["设备信息"] = grouped["client_uuid"].apply(self.get_client_info)
+    #
+    #     # 第二次聚合，按照设备信息聚合
+    #     res = grouped.groupby("设备信息").agg(
+    #         {"有效数据(组)": sum, "平均时间(秒)": sum, "最长时间(秒)": max, "最短时间(秒)": min})
+    #     res.reset_index(inplace=True)
+    #     res["平均时间(秒)"] = res.apply(self.get_mean, axis=1)
+    #     res.sort_values("最短时间(秒)", inplace=True)
+    #     final = res[res["设备信息"] != "Unknown"].copy()
+    #
+    #     final["系统版本"] = final["设备信息"].map(lambda x: self.dict_["device"].get(x))
+    #     return final
 
     @staticmethod
     def get_mean(series):
         total = series["有效数据(组)"]
-        sum_ = series["平均解压时间(秒)"]
+        sum_ = series["平均时间(秒)"]
         return round(sum_/total, 2)
 
     def get_client_info(self, uuid):
+        uuid_dict = self.dict_["uuid"]          # uuid 2 device_info
+        device_dict = self.dict_["device"]      # device_info 2 (os_type, os_system)
+
         # 先尝试从json中取
-        device_detail = self.dict_.get(uuid)
-        if device_detail is not None:
-            os_type, os_version, device_info = device_detail
-            return f"{os_type}({os_version})", device_info
+        device_info = uuid_dict.get(uuid)
+        if device_info is not None:
+            return device_info
 
         # 取不到再从数据库中取
         table = self.activate
@@ -112,20 +138,21 @@ class Statistician(object):
         for row in q:
             device_info = row.device_info
             if device_info[0] != "&":
-                os_type, os_version = row.os_type, row.os_version
-                self.dict_[uuid] = (os_type, os_version, device_info)
-                return f"{os_type}({os_version})", device_info
-        # 如果还是拿不到device_info，那就取最后一条
-        row = self.session.query(table).filter_by(client_uuid=uuid).order_by(-table.c.time).first()
-        return f"{row.os_type}({row.os_version})", "Unknown"
+                os_version = f"# {row.os_version}"
+                uuid_dict[uuid] = device_info
+                device_dict[device_info] = os_version
+                return device_info
+        # 如果还是拿不到device_info, 就返回Unknown（后续会被直接过滤掉）
+        return "Unknown"
 
     @staticmethod
-    def filter_then_build(query_obj, start_step, end_step):
+    def filter_then_build(query_obj, start_step, end_step, interval):
         """
         过滤有效的数据
         :param query_obj
         :param start_step
         :param end_step
+        :param interval     最长时间，超过这个值的数据会被忽略
         :return:
         """
         data = list()
@@ -146,16 +173,30 @@ class Statistician(object):
                 if check_time is not None:
                     end_time = row.time
                     cost = (end_time-check_time).seconds
-                    # 超过60s的数据不算
-                    if cost < INTERVAL:
+                    # 超过最长时间的数据不算
+                    if interval[0] < cost < interval[1]:
                         # 设备的uuid、开始解压时间、结束解压时间、解压过程耗时
-                        data.append([uuid_, "", cost, cost, cost])
+                        data.append([uuid_, cost])
 
-        df = pd.DataFrame(data, columns=["client_uuid", "有效数据(组)", "平均解压时间(秒)",
-                                         "最长解压时间(秒)", "最短解压时间(秒)"])
+        df = pd.DataFrame(data, columns=["client_uuid", "cost_time"])
         return df
 
-    def write_2_excel(self, df, sheet_name):
+
+class ExcelWriter(object):
+
+    def __init__(self, start_date):
+        self.writer = pd.ExcelWriter(f"统计结果_{start_date.strftime('%Y_%m_%d')}.xlsx")
+
+    def write(self, df_tuple):
+        order = ["设备信息", "系统版本", "有效数据(组)", "平均时间(秒)", "最短时间(秒)", "最长时间(秒)"]
+        sheet_list = ["解压时长", "解压后黑屏时长"]
+
+        for i, df in enumerate(df_tuple):
+            self._write(df=df[order], sheet_name=sheet_list[i])
+
+        self.writer.save()
+
+    def _write(self, df, sheet_name):
         """
         将结果吸入excel
         :param df:              对应的DataFrame数据
@@ -166,12 +207,127 @@ class Statistician(object):
         style_df(df, writer_obj=self.writer, sheet_name=sheet_name)
 
 
-if __name__ == "__main__":
-    USER_NAME = "logstat"
-    PASSWORD = "Logstat123"
-    HOST = "mlcn-aliyun-test.rwlb.rds.aliyuncs.com"
-    DB = "db_log_report"
+class ReportAnalyser(object):
+    def __init__(self):
+        self.data = list()
+        self.x_axis = list()
+        self.average = list()
 
-    s = Statistician(user=USER_NAME, pwd=PASSWORD, host=HOST, db=DB)
-    s.get_resource_data()
-    s.sava()
+    @staticmethod
+    def _format_date(dt):
+        return dt.strftime("%Y.%m.%d")
+
+    def analysis_on(self, start_date, end_date, df):
+        start = self._format_date(start_date)
+        end = self._format_date(end_date-timedelta(days=1))
+        title = f"{start}-{end}"
+
+        cost_time = [data.cost_time.tolist() for data in df]
+        mean = round(np.array(cost_time[0]).mean(), 2)
+        self.average.append(mean)
+
+        result = self._analyse(cost_time[0], title)
+        print(title)
+        print(result)
+        self._draw_charts(cost_time[0], title, mean)
+
+    def _analyse(self, data, title):
+        total = len(data)
+        dict_ = self._group_data(data)
+
+        with_value = dict()
+        without_value = list()
+        for k, v in dict_.items():
+            value = v/total
+            percent = f"{value:.2%}"
+            without_value.append(round(value*100, 2))
+            with_value[k] = f"{v}({percent})"
+
+        self.x_axis.append(title)
+        self.data.append(without_value)
+        return with_value
+
+    @staticmethod
+    def _group_data(data):
+        res = dict(zip(["0~9", "10~17", "18~25", "26~40", "41~60"], [0, 0, 0, 0, 0, 0]))
+        for d in data:
+            if d < 10:
+                res["0~9"] += 1
+            elif 10 <= d <= 17:
+                res["10~17"] += 1
+            elif 18 <= d <= 25:
+                res["18~25"] += 1
+            elif 26 <= d <= 40:
+                res["26~40"] += 1
+            else:
+                res["41~60"] += 1
+        return res
+
+    @staticmethod
+    def _draw_charts(data, title, ave):
+        if data:
+            total = len(data)
+            note = f"有效数据：{total}组\n平均解压时长：{ave}秒"
+            plt.hist(data, bins=15, rwidth=0.6, density=True)
+            plt.title(title)
+            plt.xlabel("解压时长(单位：秒)")
+            plt.annotate(note, xy=(0.6, 0.3), xycoords="figure fraction", color="#CD6600")
+            plt.ylabel("频率")
+            plt.grid(True)
+            plt.show()
+
+    def statistic(self):
+        self._statistic_distribution()
+        self._statistic_mean()
+
+    def _statistic_mean(self):
+        today = date.today()
+        str_today = self._format_date(today)
+        c = (
+            Line()
+            .add_xaxis(self.x_axis)
+            .add_yaxis("平均解压时长(单位：秒)", self.average)
+            .set_global_opts(title_opts=opts.TitleOpts(title="解压时长统计", subtitle=f"数据更新于:{str_today}"),
+                             xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-25)))
+            .render("平均统计.html")
+        )
+
+    def _statistic_distribution(self):
+        """
+        绘制分布的柱状图
+        :return:
+        """
+        today = date.today()
+        str_today = self._format_date(today)
+        c = Bar(init_opts=opts.InitOpts(width="1200px", height="600px")).add_xaxis(self.x_axis)
+        note = ["区间A(0s~9s)", "区间B(10s~17s)", "区间C(18s~25s)", "区间D(26s~40s)", "区间E(41s~60s)"]
+        data = np.array(self.data)
+        for i, v in enumerate(note):
+            c.add_yaxis(v, list(data[:, i]), label_opts=opts.LabelOpts(formatter="{c}%"))
+        c.set_global_opts(xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-25)),
+                          title_opts=opts.TitleOpts(title="解压时长区间统计", subtitle=f"数据更新于:{str_today}"),
+                          yaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(formatter="{value} %")))
+        c.render("区间分布.html")
+
+
+def run(since, type_, delta, until=date.today()):
+    if type_ == "report":
+        analyser = ReportAnalyser()
+
+    while True:
+        end = since + timedelta(days=delta)
+        s = Statistician(db="db_log_report", start_day=since, day_delta=delta)
+        s.run(analyser)
+        if end > until:
+            break
+        since = end
+
+    analyser.statistic()
+
+
+if __name__ == "__main__":
+    begin_from = date(2023, 1, 2)
+    statistician_type = "report"
+
+    run(since=begin_from, type_=statistician_type, delta=14)
+
