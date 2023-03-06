@@ -3,9 +3,8 @@
 # @Time    : 2023/2/28 10:14
 # @File    : Statistician.py 
 # @Desc    : 从数据库中拉取埋点数据
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 import json
-from collections import defaultdict
 
 from sqlalchemy import MetaData, Table
 from sqlalchemy import create_engine
@@ -63,7 +62,6 @@ class Statistician(MySqaLinker):
         self.sava()
 
         writer_obj.analysis_on(start_date=self.start, end_date=self.end, df=data_tuple)
-
 
 
     def get_resource_data(self):

@@ -8,3 +8,6 @@ sqlalchemy
 mysqlclient
 pyecharts
 matplotlib
+lxml
+echarts-themes-pypkg
+requests-toolbelt

@@ -8,27 +8,19 @@ import datetime
 
 import requests
 import pandas as pd
-from sqlalchemy import MetaData, Table, create_engine, inspect, Column, Integer, String, Float, DateTime
+from sqlalchemy import MetaData, Table, create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
+from lxml import etree
 
 
 # 资源种类
 TYPE_ = {"-1": "Lua", "0": "UI", "1": "Art", "4": "Table", "5": "Scene", "7": "Audio", "8": "Video"}
 
 
-def get_trunk_csv():
-    """下载trunk的包体信息"""
-    url = "http://192.168.115.210:9880/mobagame/incn/Trunk_DFJZ_180.1-intest-2019/"
-    file_list = ["LoadRes.csv", "LoadResInPackFile_and.csv", "LoadResInPackFile_ios.csv"]
-    for file in file_list:
-        file_url = f"{url}{file}"
-        req = requests.get(file_url, stream=True)
-        with open(file, "wb") as f:
-            for chunk in req.iter_content(chunk_size=1024):  # 每次加载1024字节
-                f.write(chunk)
-
-
 class Analyser(object):
+    # 主干所有包体的信息都在这个url里
+    url = "http://192.168.115.210:9880/mobagame/incn/Trunk_DFJZ_180.1-intest-2019/"
+
     def __init__(self, load_res, android_pack, ios_pack, branch="Trunk"):
         """
         :param load_res: 表LoadRes.csv的路径
@@ -36,10 +28,14 @@ class Analyser(object):
         :param ios_pack: 表LoadResInPackFile_ios.csv的路径
         :param branch : 分支
         """
+        self.download_csv()
+
         self.load_res = self.read_csv(load_res)
         self.android_pack = self.read_csv(android_pack)
         self.ios_pack = self.read_csv(ios_pack)
         self.branch = branch
+
+        self.size_dict = dict()
 
     @staticmethod
     def read_csv(csv_path):
@@ -53,21 +49,48 @@ class Analyser(object):
         return pd.read_csv(csv_path, keep_default_na=False, dtype=str, header=1, skiprows=[2],
                            encoding="utf-16", sep="\t", usecols=df1.columns.tolist())
 
-    def pack_resource(self):
+    def download_csv(self):
+        """下载三个CSV"""
+        file_list = ["LoadRes.csv", "LoadResInPackFile_and.csv", "LoadResInPackFile_ios.csv"]
+        for file in file_list:
+            file_url = f"{self.url}{file}"
+            self._download_file(file_url=file_url, file_name=file)
+
+    def get_pack_size(self):
+        r = requests.get(self.url)
+        html = etree.HTML(r.text)
+
+        for node in html.xpath("//a[contains(@href, 'apk') or contains(@href, 'ipa')]"):
+            attr = dict(node.attrib)
+            title = attr.get("title")
+
+            # Android包
+            if "aliyun-cnqd09.apk" in title:
+                size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.apk")
+                self.size_dict["mlbb_trunk.apk"] = size
+
+            # IOS包
+            elif "inhouse-intest-cnqd09.ipa" in title:
+                size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.ipa")
+                self.size_dict["mlbb_trunk.ipa"] = size
+
+    def pack_resource(self, operator_obj):
         """IOS/Android数据写入"""
-        operator = SQLOperator(table="InPack")
+        print(self.size_dict)
 
         # apk写入
         apk_detail = self._android_pack()
         apk_detail["Branch"] = self.branch
         apk_detail["Type"] = "Android"
-        operator.insert_data(apk_detail)
+        apk_detail["Total"] = self.size_dict["mlbb_trunk.apk"]
+        operator_obj.insert_data(apk_detail)
 
         # ipa写入
         ipa_detail = self._ios_pack()
         ipa_detail["Branch"] = self.branch
         ipa_detail["Type"] = "IOS"
-        operator.insert_data(ipa_detail)
+        ipa_detail["Total"] = self.size_dict["mlbb_trunk.ipa"]
+        operator_obj.insert_data(ipa_detail)
 
     def missing_id(self):
         all_id = self.load_res.ID.tolist()
@@ -119,24 +142,31 @@ class Analyser(object):
         size = size / 1000
         return round(size, 2)
 
+    def _download_file(self, file_url, file_name):
+        """
+        分块下载文件
+        :param file_url:    文件的url
+        :param file_name:   下载后文件的名字
+        :return:
+        """
+        req = requests.get(file_url, stream=True)
+        with open(file_name, "wb") as f:
+            for chunk in req.iter_content(chunk_size=1024):  # 每次加载1024字节
+                f.write(chunk)
+        return self._get_size(file_name)
+
+    @staticmethod
+    def _get_size(path):
+        """
+        获取文件的大小，转为MB
+        :param path:  文件的路径
+        :return:
+        """
+        size_ = os.path.getsize(path)
+        return round(size_/(1024*1024), 2)
+
 
 Base = declarative_base()
-
-
-class Pack(Base):
-    __tablename__ = "InPack"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    Lua = Column(Float)
-    UI = Column(Float)
-    Art = Column(Float)
-    Table = Column(Float)
-    Scene = Column(Float)
-    Audio = Column(Float)
-    Video = Column(Float)
-    Branch = Column(String)
-    Type = Column(String)
-    Time = Column(DateTime)
 
 
 class SQLOperator(object):
@@ -166,15 +196,86 @@ class SQLOperator(object):
         conn.commit()
         conn.close()
 
+    def fetch_last_times(self):
+        """
+        获取最近（五天）的数据
+        :return:
+        """
+        table = self.table
+        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(5)
+        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(5)
 
+        apk_pack, apk_resource, date_ = self._analyse_query(apk_q)
+        ipa_pack, ipa_resource, date_ = self._analyse_query(ipa_q)
+        return {"resource": {"apk": apk_resource, "ipa": ipa_resource},
+                "pack": {"apk": apk_pack, "ipa": ipa_pack},
+                "date": date_}
+
+    def fetch_daily_data(self):
+        """
+        获取最近两天的数据
+        :return:
+        """
+        table = self.table
+        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(2)
+        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(2)
+
+        apk_resource, apk_size = self._analyse_daily(apk_q)
+        ipa_resource, ipa_size = self._analyse_daily(ipa_q)
+
+        return {"apk": {"resource": apk_resource, "size": apk_size},
+                "ipa": {"resource": ipa_resource, "size": ipa_size}}
+
+
+    @staticmethod
+    def _analyse_daily(q):
+        today = None
+        pack_size = list()
+
+        for index, row in enumerate(q):
+            tuple_ = tuple(row)
+
+            # 当天的数据全部获取——目前没有Video资源，所以暂时不取
+            if index == 0:
+                today = tuple_[1:7]
+
+            pack_size.append(tuple_[-1])
+
+        return today, pack_size
+
+
+    @staticmethod
+    def _analyse_query(q):
+        """
+        从query中返回资源和首包的大小
+        :param q:
+        :return:
+        """
+        pack_size = list()
+        resource_size = list()
+        date_list = list()
+
+        for index, row in enumerate(q):
+            tuple_ = tuple(row)
+
+            # 格式化日期
+            date_ = tuple_[-2].strftime("%Y.%m.%d")
+            date_list.append(date_)
+            # 包体大小只显示最近两天的
+            if index < 2:
+                pack_size.append(tuple_[-1])
+
+            # 目前没有Video资源，所以暂时不取
+            resource_size.append(tuple_[1:7])
+
+        return pack_size[::-1], resource_size[::-1], date_list
 
 
 
 if __name__ == "__main__":
-    get_trunk_csv()
+    operator = SQLOperator(table="Inpack")
 
-    a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
-    a.pack_resource()
+    # a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
+    # a.get_pack_size()
+    # a.pack_resource(operator)
 
-    # operator = SQLOperator()
-    # operator.create_table()

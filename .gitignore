@@ -133,3 +133,6 @@ dmypy.json
 /app_resource/*.xlsx
 /burypoint/*.html
 /burypoint/*.xlsx
+/app_resource/*.apk
+/app_resource/*.ipa
+/app_resource/*.png

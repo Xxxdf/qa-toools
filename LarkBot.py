@@ -8,6 +8,7 @@ import json
 import os
 import time
 
+from requests_toolbelt import MultipartEncoder
 import requests
 
 
@@ -67,6 +68,24 @@ class LarkBot(object):
             return self.upload_file(file_name=file_name, path=path, folder_token=folder_token)
         else:
             return r.json()["data"]["file_token"]
+
+    def get_image_key(self, png_path):
+        url = "https://open.feishu.cn/open-apis/im/v1/images"
+        data = {
+            "image_type": "message",
+            "image": open(png_path, "rb")
+        }
+        multi_form = MultipartEncoder(data)
+        self.access_head["Content-Type"] = multi_form.content_type
+        resp = requests.request("POST", url, headers=self.access_head, data=multi_form)
+        dict_ = resp.json()
+
+        if dict_["code"] != 0:
+            # TODO 后续补一个报错的逻辑
+            pass
+        else:
+            # 反之返回对应的image_key
+            return dict_["data"]["image_key"]
 
     def import_file(self, file_token, file_name, folder_token):
         """
