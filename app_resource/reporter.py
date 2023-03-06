@@ -11,14 +11,14 @@ from pyecharts.charts import Bar, Pie
 from pyecharts.render import make_snapshot
 from snapshot_phantomjs import snapshot
 from pyecharts.globals import ThemeType
+from pyecharts.globals import CurrentConfig
 
 from analyser import SQLOperator
 
 sys.path.append(os.path.abspath(os.path.dirname(os.getcwd())))
-
-from ProjectBot import ProjectBot
 from LarkBot import LarkBot
-from utils import style_df
+
+CurrentConfig.ONLINE_HOST = "https://cdn.jsdelivr.net/npm/echarts@latest/dist/"
 
 def draw_bar(date_list, detail):
     resource_type = ["Lua代码", "UI资源", "Art资源", "表格资源", "场景资源", "音频资源"]
