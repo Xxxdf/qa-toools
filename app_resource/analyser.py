@@ -275,7 +275,7 @@ class SQLOperator(object):
 if __name__ == "__main__":
     operator = SQLOperator(table="Inpack")
 
-    # a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
-    # a.get_pack_size()
-    # a.pack_resource(operator)
+    a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
+    a.get_pack_size()
+    a.pack_resource(operator)
 
