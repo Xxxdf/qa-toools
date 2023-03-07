@@ -198,9 +198,9 @@ class DailyReporter(LarkBot):
 
         diff = size_tuple[0] - size_tuple[1]
         if diff > 0:
-            return f"**<font color='red'>增加</font>**了**{diff}MB**"
+            return f"**<font color='red'>增加</font>**了**{round(diff, 2)}MB**"
         elif diff < 0:
-            return f"**<font color='green'>减少</font>**了**{abs(diff)}MB**"
+            return f"**<font color='green'>减少</font>**了**{round(abs(diff), 2)}MB**"
         else:
             return f"包体大小**无变化**"
 
