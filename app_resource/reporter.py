@@ -50,7 +50,8 @@ def draw_pie(data, title, file_name):
             legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%",
                                         textstyle_opts=opts.TextStyleOpts(font_family="Microsoft YaHei"))
         )
-        .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}:{d}%\n({c}MB)", font_size=15))
+        .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}:{d}%\n({c}MB)", font_size=15,
+                                                   font_family="Microsoft YaHei"))
     )
 
     make_snapshot(snapshot, c.render(), file_name, pixel_ratio=1)
