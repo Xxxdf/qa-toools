@@ -76,7 +76,6 @@ class Analyser(object):
 
     def pack_resource(self, operator_obj):
         """IOS/Android数据写入"""
-        print(self.size_dict)
 
         # apk写入
         apk_detail = self._android_pack()
@@ -94,7 +93,6 @@ class Analyser(object):
 
     def missing_id(self):
         all_id = self.load_res.ID.tolist()
-        # print(all_id)
         missing = self.android_pack[~self.android_pack.ID.isin(all_id)]
         missing.to_excel("missing.xlsx", index=False)
 
@@ -113,7 +111,7 @@ class Analyser(object):
         分析IOS首包的资源
         """
         # 先转float，然后分组聚合
-        self.ios_pack["filesize"] = self.android_pack["filesize"].astype(float)
+        self.ios_pack["filesize"] = self.ios_pack["filesize"].astype(float)
         grouped = self.ios_pack.groupby("packResType").agg({"filesize": sum})
 
         return self.trim_grouped(grouped)
@@ -202,14 +200,13 @@ class SQLOperator(object):
         :return:
         """
         table = self.table
-        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(5)
-        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(5)
+        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(3)
+        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(3)
 
-        apk_pack, apk_resource, date_ = self._analyse_query(apk_q)
-        ipa_pack, ipa_resource, date_ = self._analyse_query(ipa_q)
-        return {"resource": {"apk": apk_resource, "ipa": ipa_resource},
-                "pack": {"apk": apk_pack, "ipa": ipa_pack},
-                "date": date_}
+        apk_resource, date_ = self._analyse_query(apk_q)
+        ipa_resource, date_ = self._analyse_query(ipa_q)
+
+        return {"apk": apk_resource, "ipa": ipa_resource, "date": date_}
 
     def fetch_daily_data(self):
         """
@@ -243,7 +240,6 @@ class SQLOperator(object):
 
         return today, pack_size
 
-
     @staticmethod
     def _analyse_query(q):
         """
@@ -251,24 +247,19 @@ class SQLOperator(object):
         :param q:
         :return:
         """
-        pack_size = list()
         resource_size = list()
         date_list = list()
 
         for index, row in enumerate(q):
-            tuple_ = tuple(row)
+            list_ = list(row)
 
             # 格式化日期
-            date_ = tuple_[-2].strftime("%Y.%m.%d")
+            date_ = list_[-2].strftime("%Y.%m.%d")
             date_list.append(date_)
-            # 包体大小只显示最近两天的
-            if index < 2:
-                pack_size.append(tuple_[-1])
 
             # 目前没有Video资源，所以暂时不取
-            resource_size.append(tuple_[1:7])
-
-        return pack_size[::-1], resource_size[::-1], date_list
+            resource_size.append(list_[1:7]+[list_[-1]])
+        return resource_size[::-1], date_list[::-1]
 
 
 

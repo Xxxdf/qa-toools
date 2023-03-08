@@ -7,7 +7,7 @@ import os
 import sys
 
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Pie
+from pyecharts.charts import Line, Pie
 from pyecharts.render import make_snapshot
 from snapshot_phantomjs import snapshot
 from pyecharts.globals import CurrentConfig
@@ -19,18 +19,9 @@ from LarkBot import LarkBot
 
 CurrentConfig.ONLINE_HOST = "https://cdn.jsdelivr.net/npm/echarts@latest/dist/"
 
-def draw_bar(date_list, detail):
-    resource_type = ["Lua代码", "UI资源", "Art资源", "表格资源", "场景资源", "音频资源"]
-    c = Bar()
-    c.add_xaxis(resource_type)
 
-    for idx, date in enumerate(date_list):
-        c.add_yaxis(date, detail[idx])
-
-    c.reversal_axis()
-    c.set_series_opts(label_opts=opts.LabelOpts(position="right"))
-    c.set_global_opts(title_opts=opts.TitleOpts(title="Android首包资源变化情况"))
-    c.render("bar_reversal_axis.html")
+def draw_line(date, detail):
+    pass
 
 
 def draw_pie(data, title, file_name):
@@ -219,3 +210,6 @@ if __name__ == "__main__":
     bot = DailyReporter(apk_size=last_data["apk"]["size"], ipa_size=last_data["ipa"]["size"])
     card = bot.prepare()
     bot.send_2_me(card)
+
+    # last_days = operator.fetch_last_times()
+    # draw_line(date=last_days["date"], detail="")
