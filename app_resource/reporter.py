@@ -10,7 +10,6 @@ from pyecharts import options as opts
 from pyecharts.charts import Bar, Pie
 from pyecharts.render import make_snapshot
 from snapshot_phantomjs import snapshot
-from pyecharts.globals import ThemeType
 from pyecharts.globals import CurrentConfig
 
 from analyser import SQLOperator
@@ -34,20 +33,23 @@ def draw_bar(date_list, detail):
     c.render("bar_reversal_axis.html")
 
 
-def draw_pie(data, title, file_name, theme):
+def draw_pie(data, title, file_name):
     pack_size = data["size"]
     data_ = get_percent(resource=data["resource"], pack=pack_size[0])
 
     c = (
-        Pie(init_opts=opts.InitOpts(theme=theme))
+        Pie()
         .add(
             "",
             data_,
             radius=["40%", "75%"],
         )
         .set_global_opts(
-            title_opts=opts.TitleOpts(title=title),
-            legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%"),
+            title_opts=opts.TitleOpts(title=title,
+                                      title_textstyle_opts=opts.TextStyleOpts(font_family="Microsoft YaHei")),
+            legend_opts=opts.LegendOpts(orient="vertical", pos_top="15%", pos_left="2%",
+                                        textstyle_opts=opts.TextStyleOpts(font_family="Microsoft YaHei")),
+            visualmap_opts=opts.VisualMapOpts(textstyle_opts=opts.TextStyleOpts(font_family="Microsoft YaHei"))
         )
         .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}:{d}%\n({c}MB)", font_size=15))
     )
@@ -210,9 +212,9 @@ if __name__ == "__main__":
 
     last_data = operator.fetch_daily_data()
     # 绘制Android的
-    draw_pie(data=last_data["apk"], title="Android首包资源占比", file_name="apk_daily.png", theme=ThemeType.VINTAGE)
+    draw_pie(data=last_data["apk"], title="Android首包资源占比", file_name="apk_daily.png")
     # 绘制IOS的
-    draw_pie(data=last_data["ipa"], title="IOS首包资源占比", file_name="ipa_daily.png", theme=ThemeType.VINTAGE)
+    draw_pie(data=last_data["ipa"], title="IOS首包资源占比", file_name="ipa_daily.png")
 
     bot = DailyReporter(apk_size=last_data["apk"]["size"], ipa_size=last_data["ipa"]["size"])
     card = bot.prepare()
