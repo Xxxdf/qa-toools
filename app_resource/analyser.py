@@ -28,8 +28,6 @@ class Analyser(object):
         :param ios_pack: 表LoadResInPackFile_ios.csv的路径
         :param branch : 分支
         """
-        self.download_csv()
-
         self.load_res = self.read_csv(load_res)
         self.android_pack = self.read_csv(android_pack)
         self.ios_pack = self.read_csv(ios_pack)
@@ -48,13 +46,6 @@ class Analyser(object):
         df1 = pd.read_csv(csv_path, sep="\t", encoding="utf-16", dtype=str, header=1, nrows=1)
         return pd.read_csv(csv_path, keep_default_na=False, dtype=str, header=1, skiprows=[2],
                            encoding="utf-16", sep="\t", usecols=df1.columns.tolist())
-
-    def download_csv(self):
-        """下载三个CSV"""
-        file_list = ["LoadRes.csv", "LoadResInPackFile_and.csv", "LoadResInPackFile_ios.csv"]
-        for file in file_list:
-            file_url = f"{self.url}{file}"
-            self._download_file(file_url=file_url, file_name=file)
 
     def get_pack_size(self):
         r = requests.get(self.url)
@@ -266,7 +257,9 @@ class SQLOperator(object):
 if __name__ == "__main__":
     operator = SQLOperator(table="Inpack")
 
-    a = Analyser(load_res="LoadRes.csv", android_pack="LoadResInPackFile_and.csv", ios_pack="LoadResInPackFile_ios.csv")
+    a = Analyser(load_res="/data/Document/LoadRes.csv",
+                 android_pack="/data/Document/LoadResInPackFile_and.csv",
+                 ios_pack="/data/Document/LoadResInPackFile_ios.csv")
     a.get_pack_size()
     a.pack_resource(operator)
 
