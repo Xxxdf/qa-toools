@@ -214,7 +214,6 @@ class SQLOperator(object):
         return {"apk": {"resource": apk_resource, "size": apk_size},
                 "ipa": {"resource": ipa_resource, "size": ipa_size}}
 
-
     @staticmethod
     def _analyse_daily(q):
         today = None
@@ -245,11 +244,13 @@ class SQLOperator(object):
             list_ = list(row)
 
             # 格式化日期
-            date_ = list_[-2].strftime("%Y.%m.%d")
+            date_ = list_[-2].strftime("%m.%d")
             date_list.append(date_)
 
+            temp = [list_[i] for i in (4, 1, 5, 6, 2, 3)]
+
             # 目前没有Video资源，所以暂时不取
-            resource_size.append(list_[1:7]+[list_[-1]])
+            resource_size.append(temp+[list_[-1]])
         return resource_size[::-1], date_list[::-1]
 
 

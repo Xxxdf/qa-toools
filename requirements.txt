@@ -11,3 +11,4 @@ matplotlib
 lxml
 echarts-themes-pypkg
 requests-toolbelt
+adjustText
