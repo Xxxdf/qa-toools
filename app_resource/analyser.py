@@ -19,7 +19,7 @@ TYPE_ = {"-1": "Lua", "0": "UI", "1": "Art", "4": "Table", "5": "Scene", "7": "A
 
 class Analyser(object):
     # 主干所有包体的信息都在这个url里
-    url = "http://192.168.115.210:9880/mobagame/incn/Trunk_DFJZ_180.1-intest-2019/"
+    url = "http://192.168.115.210:9880/mobagame/incn/DFJZ_180.1-intest-2019/"
 
     def __init__(self, load_res, android_pack, ios_pack, branch="Trunk"):
         """
@@ -56,12 +56,12 @@ class Analyser(object):
             title = attr.get("title")
 
             # Android包
-            if "aliyun-cnqd09.apk" in title:
+            if "aliyun-cnqd09-31.apk" in title:
                 size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.apk")
                 self.size_dict["mlbb_trunk.apk"] = size
 
             # IOS包
-            elif "inhouse-intest-cnqd09.ipa" in title:
+            elif "cnqd09-31.ipa" in title:
                 size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.ipa")
                 self.size_dict["mlbb_trunk.ipa"] = size
 
