@@ -37,8 +37,10 @@ def draw_line(date, apk_pack, ipa_pack):
         .add_xaxis(date)
         .add_yaxis("Android首包", list(apk_pack))
         .add_yaxis("IOS首包", list(ipa_pack))
-        .set_global_opts(title_opts=opts.TitleOpts(title="包体大小变化"),
-                         yaxis_opts=opts.AxisOpts(min_=int(mean*0.8)))
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="包体大小变化",
+                                      title_textstyle_opts=opts.TextStyleOpts(font_family="Microsoft YaHei")),
+            yaxis_opts=opts.AxisOpts(min_=int(mean*0.8)))
     )
 
     make_snapshot(snapshot, c.render(), PACK_PNG, pixel_ratio=2)
@@ -434,6 +436,6 @@ if __name__ == "__main__":
 
     bot = DailyReporter(last_apk[-1], last_ipa[-1])
     card = bot.prepare()
-    bot.send_2_me(card)
-    # bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
-    #                  content=card)
+    # bot.send_2_me(card)
+    bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
+                     content=card)
