@@ -434,5 +434,6 @@ if __name__ == "__main__":
 
     bot = DailyReporter(last_apk[-1], last_ipa[-1])
     card = bot.prepare()
-    bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
-                     content=card)
+    bot.send_2_me(card)
+    # bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
+    #                  content=card)

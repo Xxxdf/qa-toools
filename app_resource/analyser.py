@@ -191,8 +191,8 @@ class SQLOperator(object):
         :return:
         """
         table = self.table
-        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(3)
-        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(3)
+        apk_q = self.session.query(table).filter_by(Type="Android").order_by(table.c.Time.desc()).limit(4)
+        ipa_q = self.session.query(table).filter_by(Type="IOS").order_by(table.c.Time.desc()).limit(4)
 
         apk_resource, date_ = self._analyse_query(apk_q)
         ipa_resource, date_ = self._analyse_query(ipa_q)
