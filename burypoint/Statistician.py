@@ -17,7 +17,7 @@ import numpy as np
 
 from utils import style_df
 
-UNZIP_INTERVAL = (5, 60)                                 # 最长解压时间
+UNZIP_INTERVAL = (2, 25)                                 # 最长解压时间
 
 WAIT_INTERVAL = (2, 30)                                  # 最长黑屏时间
 USER_NAME = "logstat"                               # 连接mysql的用户名
@@ -47,22 +47,22 @@ metadata = MetaData()
 
 class Statistician(MySqaLinker):
 
-    def __init__(self, db, day_delta, start_day: date):
+    def __init__(self, db, end_day:date, start_day: date):
         super(Statistician, self).__init__(db)
         self.activate = Table("client_appinstall_activate", metadata, autoload_with=self.engine)
+        self.performance = Table("client_cn_performance", metadata, autoload_with=self.engine)
 
         with open("uuid_2_device.json", "r") as load_f:
             self.dict_ = json.load(load_f)
 
         self.start = start_day
-        self.end = self.start + timedelta(days=day_delta)
+        self.end = end_day
 
     def run(self, writer_obj):
         data_tuple = self.get_resource_data()
-        self.sava()
+        self.save()
 
-        writer_obj.analysis_on(start_date=self.start, end_date=self.end, df=data_tuple)
-
+        # writer_obj.analysis_on(start_date=self.start, end_date=self.end, df=data_tuple)
 
     def get_resource_data(self):
         """"""
@@ -70,19 +70,21 @@ class Statistician(MySqaLinker):
 
         # 先筛选出所有最近三十天的数据，然后再筛选出所有开始解压-完成解压的数据，最后按照时间进行排序
         q = (self.session.query(activate).filter(activate.c.time >= self.start, activate.c.time < self.end).
-             filter(activate.c.step.in_(["MTLogoVideo01_Start", "UnZip_End", "MTLogoVideo02_Start"]))
+             filter(activate.c.step.in_(["UnZip_Start", "UnZip_End", "MTLogoVideo02_Start"]))
              .order_by(activate.c.time))
 
         # 将有效数据构造成df，然后对其进行格式化
-        df1 = self.filter_then_build(q, start_step="MTLogoVideo01_Start", end_step="UnZip_End", interval=UNZIP_INTERVAL)
-        # trimmed1 = self.trim_df(df)
+        df = self.filter_then_build(q, start_step="UnZip_Start", end_step="UnZip_End", interval=UNZIP_INTERVAL)
+        trimmed = self.trim_df(df)
+        print(trimmed)
+        return trimmed
 
-        # 将有效数据构造成df，然后对其进行格式化
-        df2 = self.filter_then_build(q, start_step="UnZip_End", end_step="MTLogoVideo02_Start", interval=WAIT_INTERVAL)
-        # trimmed2 = self.trim_df(df2)
-        return df1, df2
+        # # 将有效数据构造成df，然后对其进行格式化
+        # df2 = self.filter_then_build(q, start_step="UnZip_End", end_step="MTLogoVideo02_Start", interval=WAIT_INTERVAL)
+        # # trimmed2 = self.trim_df(df2)
+        # return df1, df2
 
-    def sava(self):
+    def save(self):
         """
         保存数据
         :return:
@@ -90,29 +92,54 @@ class Statistician(MySqaLinker):
         with open("uuid_2_device.json", "w") as f:
             json.dump(self.dict_, f)
 
-    # def trim_df(self, df):
-    #     """
-    #     对统计出来的数据做聚合，然后写入excel
-    #     :param df:
-    #     :return:
-    #     """
-    #     # 第一次聚合，按照uuid聚合，
-    #     grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均时间(秒)": sum,
-    #                                              "最长时间(秒)": max, "最短时间(秒)": min})
-    #     grouped["平均时间(秒)"] = grouped["平均时间(秒)"].map(lambda x: round(x, 2))
-    #     grouped.reset_index(inplace=True)
-    #     grouped["设备信息"] = grouped["client_uuid"].apply(self.get_client_info)
-    #
-    #     # 第二次聚合，按照设备信息聚合
-    #     res = grouped.groupby("设备信息").agg(
-    #         {"有效数据(组)": sum, "平均时间(秒)": sum, "最长时间(秒)": max, "最短时间(秒)": min})
-    #     res.reset_index(inplace=True)
-    #     res["平均时间(秒)"] = res.apply(self.get_mean, axis=1)
-    #     res.sort_values("最短时间(秒)", inplace=True)
-    #     final = res[res["设备信息"] != "Unknown"].copy()
-    #
-    #     final["系统版本"] = final["设备信息"].map(lambda x: self.dict_["device"].get(x))
-    #     return final
+    def trim_df(self, df):
+        """
+        对统计出来的数据做聚合，然后写入excel
+        :param df:
+        :return:
+        """
+        df["count"] = 1
+
+        grouped = self.group_sum_count(df, key="client_uuid")
+        grouped["设备信息"] = grouped["key_0"].apply(self.get_client_info)
+
+        temp = grouped[grouped["设备信息"] != "Unknown"].copy()
+        temp["level"] = temp["设备信息"].apply(self.get_device_level)
+        res = self.group_sum_count(temp, key="level")
+        res["平均耗时"] = res.apply(self._ave, axis=1)
+        res.rename(inplace=True, columns={"key_0": "level", "count": "有效数据(组)"})
+        res.drop(["cost_time"], inplace=True, axis=1)
+
+        return res[res["level"] != ""].copy()
+
+        # # 第一次聚合，按照uuid聚合，
+        # grouped = df.groupby("client_uuid").agg({"有效数据(组)": "count", "平均时间(秒)": sum,
+        #                                          "最长时间(秒)": max, "最短时间(秒)": min})
+        # grouped["平均时间(秒)"] = grouped["平均时间(秒)"].map(lambda x: round(x, 2))
+        # grouped.reset_index(inplace=True)
+        # grouped["设备信息"] = grouped["client_uuid"].apply(self.get_client_info)
+        #
+        # # 第二次聚合，按照设备信息聚合
+        # res = grouped.groupby("设备信息").agg(
+        #     {"有效数据(组)": sum, "平均时间(秒)": sum, "最长时间(秒)": max, "最短时间(秒)": min})
+        # res.reset_index(inplace=True)
+        # res["平均时间(秒)"] = res.apply(self.get_mean, axis=1)
+        # res.sort_values("最短时间(秒)", inplace=True)
+        # final = res[res["设备信息"] != "Unknown"].copy()
+        #
+        # final["系统版本"] = final["设备信息"].map(lambda x: self.dict_["device"].get(x))
+        # return final
+
+    @staticmethod
+    def _ave(series):
+        ave = series["cost_time"] / series["count"]
+        return round(ave, 2)
+
+    @staticmethod
+    def group_sum_count(df, key):
+        group_count = df.groupby([key])["count"].sum()
+        group_sum = df.groupby([key])["cost_time"].sum()
+        return pd.merge(group_sum, group_count, on=group_sum.index)
 
     @staticmethod
     def get_mean(series):
@@ -143,6 +170,46 @@ class Statistician(MySqaLinker):
         # 如果还是拿不到device_info, 就返回Unknown（后续会被直接过滤掉）
         return "Unknown"
 
+    def get_device_level(self, device_name):
+        level_dict = self.dict_["level"]          # uuid 2 device_info
+        device = device_name.split("&")
+        name = f'{device[1]} {device[0]}'
+
+        level = level_dict.get(name)
+        if level is not None:
+            return level
+
+        table = self.performance
+
+        q = self.session.query(table.c.realpicturequality).filter_by(devicemodel=name).first()
+        if q:
+            # 如果查询到对应的数据
+            level = q[0]
+            level_dict[name] = level
+            return level
+        return ""
+
+        # device_dict = self.dict_["device"]      # device_info 2 (os_type, os_system)
+        #
+        # # 先尝试从json中取
+        # device_info = uuid_dict.get(uuid)
+        # if device_info is not None:
+        #     return device_info
+        #
+        # # 取不到再从数据库中取
+        # table = self.activate
+        # # 先取最近的20条
+        # q = self.session.query(table).filter_by(client_uuid=uuid).order_by(-table.c.time).limit(20)
+        # for row in q:
+        #     device_info = row.device_info
+        #     if device_info[0] != "&":
+        #         os_version = f"# {row.os_version}"
+        #         uuid_dict[uuid] = device_info
+        #         device_dict[device_info] = os_version
+        #         return device_info
+        # # 如果还是拿不到device_info, 就返回Unknown（后续会被直接过滤掉）
+        # return "Unknown"
+
     @staticmethod
     def filter_then_build(query_obj, start_step, end_step, interval):
         """
@@ -162,15 +229,15 @@ class Statistician(MySqaLinker):
         for row in query_obj:
             if row.step == start_step:
                 uuid_ = row.client_uuid
-                time_ = row.time
+                time_ = row.startup_time
                 # 这里直接用新数据覆盖旧数据（这是目前想到的最好的方法，但是不确定会不会有问题）
                 in_stack[uuid_] = time_
             elif row.step == end_step:
                 uuid_ = row.client_uuid
                 check_time = in_stack.get(uuid_)
                 if check_time is not None:
-                    end_time = row.time
-                    cost = (end_time-check_time).seconds
+                    end_time = row.startup_time
+                    cost = round((end_time-check_time) / 1000, 2)
                     # 超过最长时间的数据不算
                     if interval[0] < cost < interval[1]:
                         # 设备的uuid、开始解压时间、结束解压时间、解压过程耗时
@@ -219,7 +286,6 @@ class ReportAnalyser(object):
         start = self._format_date(start_date)
         end = self._format_date(end_date-timedelta(days=1))
         title = f"{start}-{end}"
-
         cost_time = [data.cost_time.tolist() for data in df]
         mean = round(np.array(cost_time[0]).mean(), 2)
         self.average.append(mean)
@@ -247,18 +313,16 @@ class ReportAnalyser(object):
 
     @staticmethod
     def _group_data(data):
-        res = dict(zip(["0~9", "10~17", "18~25", "26~40", "41~60"], [0, 0, 0, 0, 0, 0]))
+        res = dict(zip(["1~3", "4~6", "7~9", ">9"], [0, 0, 0, 0, 0, 0]))
         for d in data:
-            if d < 10:
-                res["0~9"] += 1
-            elif 10 <= d <= 17:
-                res["10~17"] += 1
-            elif 18 <= d <= 25:
-                res["18~25"] += 1
-            elif 26 <= d <= 40:
-                res["26~40"] += 1
+            if d < 3:
+                res["1~3"] += 1
+            elif 4 <= d <= 6:
+                res["4~6"] += 1
+            elif 7 <= d <= 9:
+                res["7~9"] += 1
             else:
-                res["41~60"] += 1
+                res[">9"] += 1
         return res
 
     @staticmethod
@@ -298,7 +362,7 @@ class ReportAnalyser(object):
         today = date.today()
         str_today = self._format_date(today)
         c = Bar(init_opts=opts.InitOpts(width="1200px", height="600px")).add_xaxis(self.x_axis)
-        note = ["区间A(0s~9s)", "区间B(10s~17s)", "区间C(18s~25s)", "区间D(26s~40s)", "区间E(41s~60s)"]
+        note = ["区间A(1s~3s)", "区间B(4s~6s)", "区间C(7s~9s)", "区间D(大于9s)"]
         data = np.array(self.data)
         for i, v in enumerate(note):
             c.add_yaxis(v, list(data[:, i]), label_opts=opts.LabelOpts(formatter="{c}%"))
@@ -312,15 +376,23 @@ def run(since, type_, delta, until=date.today()):
     if type_ == "report":
         analyser = ReportAnalyser()
 
-    while True:
-        end = since + timedelta(days=delta)
-        s = Statistician(db="db_log_report", start_day=since, day_delta=delta)
-        s.run(analyser)
-        if end > until:
-            break
-        since = end
+    print(f"数据日期：{since}~{date(2023, 2, 20)}")
+    s1 = Statistician(db="db_log_report", start_day=since, end_day=date(2023, 2, 20))
+    s1.run(analyser)
 
-    analyser.statistic()
+    print(f"数据日期：{date(2023, 2, 20)}~{date.today()}")
+    s2 = Statistician(db="db_log_report", start_day=date(2023, 2, 20), end_day=date.today())
+    s2.run(analyser)
+
+    # while True:
+    #     end = since + timedelta(days=delta)
+    #     s = Statistician(db="db_log_report", start_day=since, day_delta=delta)
+    #     s.run(analyser)
+    #     if end > until:
+    #         break
+    #     since = end
+
+    # analyser.statistic()
 
 
 if __name__ == "__main__":
