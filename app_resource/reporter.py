@@ -109,7 +109,7 @@ def get_percent(resource, pack):
     :param pack:
     :return:
     """
-    title = ["Lua代码", "UI资源", "Art资源", "表格资源", "场景资源", "音频资源", "其他"]
+    title = ["表格资源", "Lua代码", "场景资源", "音频资源", "UI资源", "Art资源", "其他"]
 
     other = round(pack - sum(resource))
     detail = list(resource) + [other]
