@@ -26,7 +26,6 @@ plt.rcParams['axes.unicode_minus'] = False
 PACK_PNG = "Pack.png"       # 包体资源变化趋势
 
 
-
 def draw_line(date, apk_pack, ipa_pack):
     ave1 = apk_pack.mean()
     ave2 = ipa_pack.mean()
@@ -158,7 +157,7 @@ class DailyReporter(LarkBot):
                                             "is_short": True,
                                             "text": {
                                                 "tag": "lark_md",
-                                                "content": f"**IOS包体大小：\n{self.ipa_size}**"
+                                                "content": f"**IOS包体大小：\n{self.ipa_size}MB**"
                                             }
                                         }
                                     ]
