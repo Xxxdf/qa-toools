@@ -184,7 +184,7 @@ class MsgBot(LarkBot):
         token = self.get_import_result(ticket)
         card = self._init_msg_card(qa_info=qa_info, token=token)
 
-        self.send_message(type_="chat_id", id_="oc_1b2c1c6704cfb1bba458a899072d1c78", msg_type="interactive",
+        self.send_message(type_="chat_id", id_="oc_ee7b8ccdeb835295e2a3c41c59428f64", msg_type="interactive",
                           content=card)
 
         self.delete_folder(temp_folder)
@@ -251,9 +251,18 @@ def run():
 
     lark.prepare(remind_qa)
 
+
+def get_date(dt):
+    return dt.year, dt.month, dt.day
+
+
 if __name__ == "__main__":
-    start = datetime.datetime(2023, 4, 14, 19, 30)
-    end = datetime.datetime(2023, 4, 17, 19, 30)
+    today = datetime.date.today()
+    today_dt = get_date(today)
+    last_dt = get_date(today-datetime.timedelta(days=1))
+
+    start = datetime.datetime(last_dt[0], last_dt[1], last_dt[2], 19, 30)
+    end = datetime.datetime(today_dt[0], today_dt[1], today_dt[2], 19, 30)
 
     excel_name = name_excel()
 
