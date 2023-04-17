@@ -18,6 +18,9 @@ class LarkBot(object):
     APP_SECRET = "pF7cXFrs3iRhgU0KvSt3ndgL8oiDJwDr"
     VERIFICATION_TOKEN = "pF7cXFrs3iRhgU0KvSt3ndgL8oiDJwDr"
 
+    parent_token = ""          # 父节点的token
+    target_folder = ""         # 目标文件夹的名字
+
     def __init__(self):
         self.access_token = self.get_access_token()
         self.access_head = self.init_access_header()
@@ -202,6 +205,59 @@ class LarkBot(object):
         token = self.post_request(url=url, head=header, body=data)["tenant_access_token"]
         return f"Bearer {token}"
 
+    def get_folder_token(self):
+        """
+        获取目标文件夹的token，如果不存在则直接新建
+        :return:
+        """
+        res = self.is_folder_exist()
+        # 如果为str，那就是找到了对应的token
+        if isinstance(res, str):
+            return res
+        else:
+            return self.create_folder(folder_name=self.target_folder, folder_token=self.parent_token)
+
+    def is_folder_exist(self):
+        """
+        如果文件夹内已经有名为年份.月份的文件夹，则返回对应文件夹的token，反之返回False
+        :return:
+        """
+        page_token = ""
+        while True:
+            child_info = self.get_folder_child(folder_token=self.parent_token, page_token=page_token)
+            result, token = self.parse_folder_info(child_info)
+            if result == "Find":
+                return token
+            elif result == "Not Found":
+                return False
+            elif result == "Not yet":
+                page_token = token
+
+    def parse_folder_info(self, info):
+        """
+        解析对应的返回值
+        Args:
+            info: 调用 https://open.feishu.cn/open-apis/drive/v1/files 后返回的信息(仅有data)字段
+
+        Returns:
+
+        """
+
+        for item in info["files"]:
+            # 如果找到就返回
+            if item.get("name") == self.target_folder and item.get("type") == "folder":
+                return "Find", item.get("token")
+        # 如果还有分页，那就去下一个分页寻找
+        if info["has_more"]:
+            return "Not yet", info["next_page_token"]
+        # 如果没有分页的话，那就是找不到了
+        else:
+            return "Not Found", ""
+
+    def upload_then_import(self, folder_token, result_token, excel_name):
+        file_token = self.upload_file(file_name=excel_name, folder_token=folder_token, path=os.getcwd())
+        return self.import_file(file_token=file_token, file_name=excel_name, folder_token=result_token)
+
     def init_access_header(self):
         """
         构造通用的access_header
@@ -222,6 +278,8 @@ class LarkBot(object):
             raise Exception("Call Api Error, errorCode is %s, errorMsg is %s" % (content["code"], content["msg"]))
         else:
             return content
+
+
 
 
 if __name__ == "__main__":

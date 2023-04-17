@@ -151,14 +151,28 @@ class ProjectBot(object):
         resp = requests.get(url=url, headers=self.header)
         return resp.json()
 
+    def detail_field(self, project_key, issue_type):
+        """
+
+        :param project_key:
+        :param issue_type: 638da6ac82db43487d966c87--线上bug
+        :return:
+        """
+        url = f"https://project.feishu.cn/open_api/{project_key}/field/all"
+        resp = self.post_request(url=url, head=self.header, body={"work_item_type_key": issue_type})
+        return resp
+
 
 if __name__ == "__main__":
     bot = ProjectBot()
     # bot.fetch_all_project()
-    bot.fetch_item_detail(project_key="62b069f48eca7d17f05b1bd8", item_type="story", item_list=[3305178],
-                          expand={"need_workflow": True})
+    t = bot.fetch_item_detail(project_key="62b069f48eca7d17f05b1bd8", item_type="issue", item_list=[6193693])
+    print(json.dumps(t))
+    # t = bot.detail_field(project_key="mlbb_cn", issue_type="issue")
+    # print(json.dumps(t))
     # bot.fetch_work_flow(project_key="62b069f48eca7d17f05b1bd8", work_type=["story"], item_list=[3305178])
-    # bot.fetch_user_info(param_type="user_keys", value=["7107100589170900994"])
+    # r = bot.fetch_user_info(param_type="emails", value=["v_ikarifu@moonton.com"])
+    # print(r)
     # bot.fetch_all_view(project_key="62b069f48eca7d17f05b1bd8", issue_type="issue")
     # bot.fetch_all_types(project_key="62b069f48eca7d17f05b1bd8")
     # bot.get_issue_list_from_view(project_key="62b069f48eca7d17f05b1bd8", view_id="LfZq--K4R", page_size=200, page_num=1)
