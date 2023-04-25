@@ -205,6 +205,11 @@ class LarkBot(object):
         token = self.post_request(url=url, head=header, body=data)["tenant_access_token"]
         return f"Bearer {token}"
 
+    def get_user_info(self, user_id):
+        url = f"https://open.feishu.cn/open-apis/contact/v3/users/{user_id}"
+        r = requests.get(url, headers=self.access_head, params={"user_id_type": "user_id"})
+        return r.json()
+
     def get_folder_token(self):
         """
         获取目标文件夹的token，如果不存在则直接新建
@@ -284,4 +289,5 @@ class LarkBot(object):
 
 if __name__ == "__main__":
     bot = LarkBot()
-    bot.get_chat_id()
+    # bot.get_chat_id()
+    print(json.dumps(bot.get_user_info("o_qingxichen")))

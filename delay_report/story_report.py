@@ -208,6 +208,8 @@ class OperatorBot(ProjectBot):
         return content[1:-1]
 
 
+
+
 # 当日的年份、月份
 today = datetime.datetime.today()
 year, month, day = today.year, today.month, today.day

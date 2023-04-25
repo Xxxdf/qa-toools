@@ -164,6 +164,7 @@ class BugTraveler(object):
         qa_list = [f"<at email={email}></at>" for email in self._remind_qa]
         return "  ".join(qa_list) if qa_list else None
 
+
 # 当日的年份、月份
 today = datetime.datetime.today()
 year, month, day = today.year, today.month, today.day
