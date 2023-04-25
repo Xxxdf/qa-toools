@@ -185,7 +185,7 @@ class SendBot(LarkBot):
         token = self.get_import_result(ticket)
         card = self._init_msg_card(emails=user_email, token=token)
 
-        self.send_message(type_="chat_id", id_="oc_1b2c1c6704cfb1bba458a899072d1c78", msg_type="interactive",
+        self.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
                           content=card)
 
         self.delete_folder(temp_folder)
