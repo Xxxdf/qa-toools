@@ -248,7 +248,7 @@ if __name__ == "__main__":
     now = datetime.datetime.now()
     zero = now - datetime.timedelta(hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
 
-    end = zero + datetime.timedelta(hours=11)
+    end = zero + datetime.timedelta(hours=20)
     start = end - datetime.timedelta(days=1)
 
     all_branches = ["Android-Trunk_DFJZ", "Android-DFJZ_1.2.80.246.1"]
