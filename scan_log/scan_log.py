@@ -253,7 +253,7 @@ def send_with_webhook(card, url):
 
 if __name__ == "__main__":
     bot = SendBot()
-    url = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"   # 调试群
+    url = "https://open.feishu.cn/open-apis/bot/v2/hook/13fc83d2-7f3e-4ce3-8db5-747bb3fe6046"   # 项目大群
 
     now = datetime.datetime.now()
     zero = now - datetime.timedelta(hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
