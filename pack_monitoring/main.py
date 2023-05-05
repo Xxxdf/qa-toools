@@ -127,6 +127,7 @@ def app():
     pack_change()
     show_trend()
 
+
 if __name__ == "__main__":
     f = Formatter()
 
