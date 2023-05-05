@@ -74,12 +74,12 @@ def show_pack(type_):
     with use_scope("Android"):
         android_path = c.compare_resource("Android")
         with open(android_path, "rb") as file:
-            put_file(f"{type_}_detail.xlsx", file.read(), 'Android资源变更明细')
+            put_file("android_detail.xlsx", file.read(), 'Android资源变更明细')
 
     with use_scope("IOS"):
         ios_path = c.compare_resource("IOS")
         with open(ios_path, "rb") as file:
-            put_file(f"{type_}_detail.xlsx", file.read(), 'IOS资源变更明细')
+            put_file("ios_detail.xlsx", file.read(), 'IOS资源变更明细')
 
 
 def show_trend():
