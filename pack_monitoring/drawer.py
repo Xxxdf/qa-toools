@@ -149,6 +149,6 @@ if __name__ == "__main__":
     p = Painter(resource_df)
 
     # 画图
+    p.draw_line()
     p.draw_multi_plot("8", "Android")
     p.draw_multi_plot("d", "IOS")
-    p.draw_line()

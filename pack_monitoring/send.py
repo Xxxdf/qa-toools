@@ -149,7 +149,7 @@ def create_excel():
 
     android_path = c.compare_resource("Android")
     ios_path = c.compare_resource("IOS")
-
+    print(android_path)
 
 if __name__ == "__main__":
     bot = DailyReporter()
