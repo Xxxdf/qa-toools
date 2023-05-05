@@ -12,3 +12,5 @@ lxml
 echarts-themes-pypkg
 requests-toolbelt
 adjustText
+loguru
+flask
