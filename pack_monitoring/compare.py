@@ -41,7 +41,8 @@ class Compare(object):
         compared = self._compare_df()
         df = self._format_df(compared)
         excel_name = os.path.join(self.work_path, f"Detail_{self.type}.xlsx")
-        self._write_2_excel(df, excel_name)
+        if not os.path.exists(excel_name):
+            self._write_2_excel(df, excel_name)
         return excel_name
 
     def _write_2_excel(self, df, excel_name):

@@ -15,7 +15,6 @@ from LarkBot import LarkBot
 
 from compare import Controller
 from formatter import Formatter
-from drawer import image_path
 
 
 class DailyReporter(LarkBot):
@@ -97,14 +96,16 @@ class DailyReporter(LarkBot):
                             "is_short": True,
                             "text": {
                                 "tag": "lark_md",
-                                "content": "**Android包资源变更明细：**\n[点击下载](http://192.168.115.63:9054/detail_Android.xlsx)"
+                                "content": "**Android包资源变更明细：**\n"
+                                           "[点击下载](http://192.168.115.63:56244/download/android)"
                             }
                         },
                         {
                             "is_short": True,
                             "text": {
                                 "tag": "lark_md",
-                                "content": "**IOS资源变更明细：**\n[点击下载](http://192.168.115.63:9054/detail_IOS.xlsx)"
+                                "content": "**IOS资源变更明细：**\n"
+                                           "[点击下载](http://192.168.115.63:56244/download/ios)"
                             }
                         }
                     ]
@@ -124,6 +125,7 @@ class DailyReporter(LarkBot):
         return card
 
     def prepare(self):
+        image_path = os.path.join(os.getcwd(), "temp", "image")
         pack_key = self.get_image_key(os.path.join(image_path, "pack.png"))
         apk_key = self.get_image_key(os.path.join(image_path, "Android_line.png"))
         ipa_key = self.get_image_key(os.path.join(image_path, "IOS_line.png"))
@@ -149,15 +151,16 @@ def create_excel():
 
     android_path = c.compare_resource("Android")
     ios_path = c.compare_resource("IOS")
-    print(android_path)
+
+    return {"android_path": android_path, "ios_path": ios_path}
+
 
 if __name__ == "__main__":
     bot = DailyReporter()
+    create_excel()
     msg_card = bot.prepare()
-
     url1 = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"  # 测试用
     url2 = "https://open.feishu.cn/open-apis/bot/v2/hook/f24f00db-1e39-41a4-b19f-43a2117505ce"  # 正式用
 
-    # send_with_webhook(card=msg_card, url=url1)
-    create_excel()
+    send_with_webhook(card=msg_card, url=url1)
     # send_with_webhook(card=msg_card, url=url2)

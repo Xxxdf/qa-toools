@@ -118,6 +118,7 @@ class Painter(object):
 
         for i, name in enumerate(kind):
             df = self.data.loc[(self.data["类型"] == name) & (self.data["设备"] == sort)].sort_values("日期")
+            df.fillna(0, inplace=True)          # Nan用0填充
             y = df["大小"].tolist()
             plt.subplot(2, 3, i + 1)  # i+1，因为子图的下标是从1开始的。
             plt.plot(self.date_list, y, color=colors(i), marker=maker)
