@@ -108,7 +108,7 @@ def init_card(error_detail):
 
 
 if __name__ == '__main__':
-    jen = JenkinsOperator(job_name="部署-包体监控")
+    jen = JenkinsOperator(job_name="包体监控")
     bot = LarkBot()
 
     app.run(host="192.168.115.63", debug=True, port=56244)
