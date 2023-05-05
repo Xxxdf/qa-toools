@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import time
+import requests
 
 import pandas as pd
 
@@ -185,10 +186,12 @@ class SendBot(LarkBot):
         token = self.get_import_result(ticket)
         card = self._init_msg_card(emails=user_email, token=token)
 
-        self.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
-                          content=card)
+        # self.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
+        #                   content=card)
 
         self.delete_folder(temp_folder)
+
+        return card
 
     @staticmethod
     def _format_email():
@@ -242,8 +245,15 @@ class SendBot(LarkBot):
         return dt.strftime("%m-%d %H:%M")
 
 
+def send_with_webhook(card, url):
+    body = json.dumps({"msg_type": "interactive", "card": card})
+    res = requests.post(url=url, data=body, headers={"Content-Type":"application/json"})
+    print(res.text)
+
+
 if __name__ == "__main__":
     bot = SendBot()
+    url = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"   # 调试群
 
     now = datetime.datetime.now()
     zero = now - datetime.timedelta(hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
@@ -251,12 +261,14 @@ if __name__ == "__main__":
     end = zero + datetime.timedelta(hours=20)
     start = end - datetime.timedelta(days=1)
 
-    all_branches = ["Android-Trunk_DFJZ", "Android-DFJZ_1.2.80.246.1"]
+    all_branches = ["Android-Trunk_DFJZ", "Android-DFJZ_1.2.82.248.1"]
 
     c = Controller()
     c.run()
 
-    bot.send()
+    card_msg = bot.send()
+
+    send_with_webhook(card=card_msg, url=url)
 
     # params = {
     #     "start": "{2023-04-23}",
