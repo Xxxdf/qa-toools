@@ -245,5 +245,4 @@ if __name__ == "__main__":
 
     # 最后一定是保存的
     with open("G.json", "w") as f:
-        global user_info
         json.dump(user_info, f)
