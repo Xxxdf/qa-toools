@@ -28,7 +28,7 @@ class Analyser(object):
         :param ios_pack: 表LoadResInPackFile_ios.csv的路径
         :param branch : 分支
         """
-        self.load_res = read_csv(load_res)
+        # self.load_res = read_csv(load_res)
         self.android_pack = read_csv(android_pack)
         self.ios_pack = read_csv(ios_pack)
         self.branch = branch
@@ -70,10 +70,10 @@ class Analyser(object):
         ipa_detail["Total"] = self.size_dict["mlbb_trunk.ipa"]
         operator_obj.insert_data(ipa_detail)
 
-    def missing_id(self):
-        all_id = self.load_res.ID.tolist()
-        missing = self.android_pack[~self.android_pack.ID.isin(all_id)]
-        missing.to_excel("missing.xlsx", index=False)
+    # def missing_id(self):
+    #     all_id = self.load_res.ID.tolist()
+    #     missing = self.android_pack[~self.android_pack.ID.isin(all_id)]
+    #     missing.to_excel("missing.xlsx", index=False)
 
     def _android_pack(self):
         """
@@ -93,11 +93,11 @@ class Analyser(object):
 
         return self.trim_grouped(grouped)
 
-    def _all_resource(self):
-        # 先转float
-        grouped = self.load_res.groupby("type").agg({"filesize": sum})
-
-        return self.trim_grouped(grouped)
+    # def _all_resource(self):
+    #     # 先转float
+    #     grouped = self.load_res.groupby("type").agg({"filesize": sum})
+    #
+    #     return self.trim_grouped(grouped)
 
     def trim_grouped(self, grouped):
         """
