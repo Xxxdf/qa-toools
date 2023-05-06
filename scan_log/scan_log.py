@@ -96,7 +96,7 @@ class Controller(object):
 
     def _format_email(self):
         """把email格式化为飞书需要的形式"""
-        qa_list = [f"<at email={email}></at>" for email in self.illegal_user]
+        qa_list = [f"<at email={email}></at>" for email in self.illegal_user if email]
         return "  ".join(qa_list) if qa_list else None
 
     def _write_2_excel(self, df):
