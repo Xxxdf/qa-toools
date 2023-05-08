@@ -45,7 +45,11 @@ class Controller(object):
         excel_token = bot.import_excel(self.excel_name)
         card = bot.init_msg_card(emails=user_email, start=self.start, end=self.end, title=title,
                                  content=content, token=excel_token)
-        send_with_webhook(card)
+
+        # 现在发送到
+        bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
+                         content=card)
+        # send_with_webhook(card)
 
     def _df_2_excel(self):
         """把df写入excel"""
@@ -213,12 +217,13 @@ class DateTimeGenerator(object):
         return start, end
 
 
-def send_with_webhook(card):
-    url = "https://open.feishu.cn/open-apis/bot/v2/hook/13fc83d2-7f3e-4ce3-8db5-747bb3fe6046"   # 项目大群
-    # url = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"     # 调试群
-    body = json.dumps({"msg_type": "interactive", "card": card})
-    res = requests.post(url=url, data=body, headers={"Content-Type": "application/json"})
-    print(res.text)
+# def send_with_webhook(card):
+#     # url = "https://open.feishu.cn/open-apis/bot/v2/hook/13fc83d2-7f3e-4ce3-8db5-747bb3fe6046"   # 项目大群
+#     # url = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"     # 调试群
+#
+#     body = json.dumps({"msg_type": "interactive", "card": card})
+#     res = requests.post(url=url, data=body, headers={"Content-Type": "application/json"})
+#     print(res.text)
 
 
 if __name__ == "__main__":
