@@ -67,6 +67,10 @@ class Controller(object):
 
     def _get_user(self, author):
         """把user_id转化为用户名"""
+        # cd_开头的统一找美术PM
+        if author[0:3] == "cd_":
+            self.illegal_user.add("andrewliu@moonton.com")
+            return "刘霁"
         try:
             user_name, email = user_info[author]
         except KeyError:
