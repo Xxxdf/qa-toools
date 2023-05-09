@@ -89,7 +89,6 @@ class Controller(object):
             self.illegal_user.add(email)
             return user_info, liaison
 
-
     def _format_email(self):
         """把email格式化为飞书需要的形式"""
         qa_list = [f"<at email={email}></at>" for email in self.illegal_user if email]
@@ -143,7 +142,7 @@ class UserInfo(object):
     
     def _get_email(self, email):
         if email is not None:
-            return 
+            return email
         return f"{self.author}@moonton.com"
 
 
