@@ -111,4 +111,5 @@ if __name__ == '__main__':
     jen = JenkinsOperator(job_name="包体监控")
     bot = LarkBot()
 
+    logger.info("started")
     app.run(host="192.168.115.63", debug=True, port=56244)

@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import requests
+from operator import itemgetter
 
 import pandas as pd
 
@@ -21,7 +22,7 @@ from scanner import LegalityScanner, OnlineScanner
 
 
 with open("G.json", "r") as load_f:
-    user_info = json.load(load_f)
+    lark_info = json.load(load_f)
 
 
 class Controller(object):
@@ -34,7 +35,6 @@ class Controller(object):
         self.branches = branches
         self.scanner = scanner
 
-        self.user_info = user_info
         self.illegal_user = set()
 
     def run(self, title, content):
@@ -46,9 +46,12 @@ class Controller(object):
         card = bot.init_msg_card(emails=user_email, start=self.start, end=self.end, title=title,
                                  content=content, token=excel_token)
 
-        # 现在发送到
+        # QA群
         bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
                          content=card)
+        # # 测试群
+        # bot.send_message(type_="chat_id", id_="oc_1b2c1c6704cfb1bba458a899072d1c78", msg_type="interactive",
+        #                  content=card)
         # send_with_webhook(card)
 
     def _df_2_excel(self):
@@ -60,47 +63,32 @@ class Controller(object):
             if df is None:
                 continue
 
-            df["提交人"] = df["提交人"].map(self._get_user)
-            self._write_2_excel(df)
+            df["提交人"], df["接口人"] = zip(*df["author"].apply(self._get_user))
+            final = df.loc[:, ["提交人", "接口人", "提交时间", "提交日志", "提交分支"]]
+            self._write_2_excel(final)
 
         self.writer.close()
 
     def _get_user(self, author):
         """把user_id转化为用户名"""
-        # cd_开头的统一找美术PM
+        # cd_开头的统一找美术PM，不走后续的逻辑
         if author[0:3] == "cd_":
-            self.illegal_user.add("andrewliu@moonton.com")
-            return "刘霁"
+            self.illegal_user.add("akemili@moonton.com")
+            return author, "李怡静"
         try:
-            user_name, email = user_info[author]
+            user_info, email, liaison = lark_info["user_detail"][author]
         except KeyError:
-            user_name, email = self._get_email_with_bot(author)   # 这里的detail包含用户名和邮箱地址
-            user_info[author] = (user_name, email)
-        self.illegal_user.add(email)
-        return user_name
-
-    @staticmethod
-    def _get_email_with_bot(user_id):
-        """
-        通过飞书机器人，获取用户名和邮箱
-        :param user_id:  对应用户的user_id
-        :return:  用户名、邮箱
-        """
-        resp = bot.get_user_info(user_id)
-        try:
-            user_detail = resp["data"]["user"]
-        except KeyError:
-            return user_id, ""
+            data = bot.get_user_info(author)
+            user = UserInfo(author)
+            user_info = user.build_info(data["data"]["user"])
+            # 依次写入名称（部门）、邮箱、接口人
+            lark_info["user_detail"][author] = (user_info, user.email, user.liaison)
+            self.illegal_user.add(user.email)
+            return user_info, user.liaison
         else:
-            name, email = user_detail.get("name"), user_detail.get("enterprise_email")
+            self.illegal_user.add(email)
+            return user_info, liaison
 
-            # 部分外包同学可能调api找不到邮箱
-            if email is None:
-                email = f"{user_id}@moonton.com"
-            pos = name.find("(")
-            if pos == -1:
-                return name, email
-            return name[:pos], email
 
     def _format_email(self):
         """把email格式化为飞书需要的形式"""
@@ -111,6 +99,54 @@ class Controller(object):
         """结果写入"""
         df.to_excel(self.writer, sheet_name="Sheet1", index=False, engine="xlsxwriter")
         style_df(df, writer_obj=self.writer, sheet_name="Sheet1")
+
+    @staticmethod
+    def get_email(email):
+        return
+
+
+class UserInfo(object):
+
+    def __init__(self, author):
+        self.author = author
+
+        self.user_name = None
+        self.department = None
+        self.email = None
+        self.liaison = None         # 接口人
+    
+    def build_info(self, data):
+        self.user_name = self._actual_name(data.get("name"))
+        self.liaison = self.user_name
+        self.department = self._get_department(data.get("department_ids")[0])    # List结构
+        self.email = self._get_email(data.get("enterprise_email"))
+        return f"{self.user_name}({self.department})"
+
+    @staticmethod
+    def _actual_name(name):
+        # 如果有括号，就返回括号之前的（外包同学没有英文名）
+        pos = name.find("(")
+        if pos == -1:
+            return name
+        return name[:pos]
+
+    @staticmethod
+    def _get_department(id_):
+        """获取用户部门"""
+        try:
+            return lark_info["department_detail"][id_]
+        except KeyError:
+            resp = bot.get_department_detail(id_)
+            name = resp["data"]["department"]["name"]
+            lark_info["department_detail"][id_] = name
+            return name
+    
+    def _get_email(self, email):
+        if email is not None:
+            return 
+        return f"{self.author}@moonton.com"
+
+
 
 
 # 当日的年份、月份
@@ -221,15 +257,6 @@ class DateTimeGenerator(object):
         return start, end
 
 
-# def send_with_webhook(card):
-#     # url = "https://open.feishu.cn/open-apis/bot/v2/hook/13fc83d2-7f3e-4ce3-8db5-747bb3fe6046"   # 项目大群
-#     # url = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"     # 调试群
-#
-#     body = json.dumps({"msg_type": "interactive", "card": card})
-#     res = requests.post(url=url, data=body, headers={"Content-Type": "application/json"})
-#     print(res.text)
-
-
 if __name__ == "__main__":
     bot = SendBot()
     generator = DateTimeGenerator()
@@ -254,4 +281,4 @@ if __name__ == "__main__":
 
     # 最后一定是保存的
     with open("G.json", "w") as f:
-        json.dump(user_info, f)
+        json.dump(lark_info, f)

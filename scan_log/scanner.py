@@ -23,7 +23,7 @@ class Scanner(object):
         """
         url = f"https://192.168.40.221:8833/svn/mlproj2017/branches/{self.branch}"
         cmd = f"svn log -r {self.start}:{self.end} {url}"
-        cmd_return = subprocess.run(cmd, encoding="utf-8", stdout=subprocess.PIPE, shell=True)
+        cmd_return = subprocess.run(cmd, encoding="GBK", stdout=subprocess.PIPE, shell=True)
         return cmd_return.stdout.split("------------------------------------------------------------------------")
 
     @staticmethod
@@ -57,7 +57,7 @@ class LegalityScanner(Scanner):
         if not illegal:
             return
 
-        df = pd.DataFrame(illegal, columns=["提交人", "提交时间", "提交日志"])
+        df = pd.DataFrame(illegal, columns=["author", "提交时间", "提交日志"])
         df["提交分支"] = self.branch
         return df
     
@@ -97,7 +97,7 @@ class OnlineScanner(Scanner):
         if not illegal:
             return
 
-        df = pd.DataFrame(illegal, columns=["提交人", "提交时间", "注意项", "提交日志"])
+        df = pd.DataFrame(illegal, columns=["author", "提交时间", "注意项", "提交日志"])
         df["提交分支"] = self.branch
         return df
 
