@@ -163,4 +163,4 @@ if __name__ == "__main__":
     url2 = "https://open.feishu.cn/open-apis/bot/v2/hook/f24f00db-1e39-41a4-b19f-43a2117505ce"  # 正式用
 
     send_with_webhook(card=msg_card, url=url1)
-    # send_with_webhook(card=msg_card, url=url2)
+    send_with_webhook(card=msg_card, url=url2)
