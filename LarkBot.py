@@ -238,6 +238,12 @@ class LarkBot(object):
             elif result == "Not yet":
                 page_token = token
 
+    def get_department_detail(self, department_id):
+        url = f"https://open.feishu.cn/open-apis/contact/v3/departments/{department_id}"
+        r = requests.get(url, headers=self.access_head)
+        return r.json()
+
+
     def parse_folder_info(self, info):
         """
         解析对应的返回值
@@ -288,6 +294,12 @@ class LarkBot(object):
 
 
 if __name__ == "__main__":
+    from operator import itemgetter
     bot = LarkBot()
-    # bot.get_chat_id()
-    print(json.dumps(bot.get_user_info("o_qingxichen")))
+    bot.get_chat_id()
+    # resp = bot.get_user_info("v_nahuang")
+    # user_detail = resp["data"]["user"]
+    # print(itemgetter(*("name", "department_ids"))(user_detail))
+    # resp = bot.get_department_detail("od-a22d3d3a2858ee9912852ed88e3df998")
+    # print(json.dumps(resp))
+    # print(json.dumps(bot.get_user_info("o_qingxichen")))
