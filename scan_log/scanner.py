@@ -48,6 +48,8 @@ class Scanner(object):
 
 
 class LegalityScanner(Scanner):
+    # 列名
+    columns = ["提交人", "接口人", "提交时间", "提交日志", "提交分支"]
 
     def scan(self):
         logs = self._log_from_date_range()
@@ -88,6 +90,8 @@ class LegalityScanner(Scanner):
 
 class OnlineScanner(Scanner):
     """外放分支扫描的"""
+    # 列名
+    columns = ["提交人", "接口人", "提交时间", "提交分支", "注意项", "提交日志"]
 
     def scan(self):
         logs = self._log_from_date_range()

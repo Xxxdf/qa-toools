@@ -49,7 +49,7 @@ class Controller(object):
         # QA群
         bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
                          content=card)
-        # # 测试群
+        # 测试群
         # bot.send_message(type_="chat_id", id_="oc_1b2c1c6704cfb1bba458a899072d1c78", msg_type="interactive",
         #                  content=card)
         # send_with_webhook(card)
@@ -64,7 +64,7 @@ class Controller(object):
                 continue
 
             df["提交人"], df["接口人"] = zip(*df["author"].apply(self._get_user))
-            final = df.loc[:, ["提交人", "接口人", "提交时间", "提交日志", "提交分支"]]
+            final = df.loc[:, self.scanner.columns]
             self._write_2_excel(final)
 
         self.writer.close()
@@ -75,16 +75,24 @@ class Controller(object):
         if author[0:3] == "cd_":
             self.illegal_user.add("akemili@moonton.com")
             return author, "李怡静"
+
+        # 先从G中找
         try:
             user_info, email, liaison = lark_info["user_detail"][author]
+        # 找不到就通过lark的api
         except KeyError:
             data = bot.get_user_info(author)
             user = UserInfo(author)
-            user_info = user.build_info(data["data"]["user"])
-            # 依次写入名称（部门）、邮箱、接口人
-            lark_info["user_detail"][author] = (user_info, user.email, user.liaison)
-            self.illegal_user.add(user.email)
-            return user_info, user.liaison
+            try:
+                user_info = user.build_info(data["data"]["user"])
+            # 如果权限不足，那就先不看了
+            except KeyError:
+                return author, ""
+            else:
+                # 依次写入名称（部门）、邮箱、接口人
+                lark_info["user_detail"][author] = (user_info, user.email, user.liaison)
+                self.illegal_user.add(user.email)
+                return user_info, user.liaison
         else:
             self.illegal_user.add(email)
             return user_info, liaison
@@ -117,9 +125,12 @@ class UserInfo(object):
     def build_info(self, data):
         self.user_name = self._actual_name(data.get("name"))
         self.liaison = self.user_name
-        self.department = self._get_department(data.get("department_ids")[0])    # List结构
+        self.department = self._get_department(data.get("department_ids"))    # List结构
         self.email = self._get_email(data.get("enterprise_email"))
-        return f"{self.user_name}({self.department})"
+        if self.department:
+            return f"{self.user_name}({self.department})"
+        else:
+            return self.user_name
 
     @staticmethod
     def _actual_name(name):
@@ -130,22 +141,31 @@ class UserInfo(object):
         return name[:pos]
 
     @staticmethod
-    def _get_department(id_):
+    def _get_department(ids: list):
         """获取用户部门"""
-        try:
-            return lark_info["department_detail"][id_]
-        except KeyError:
-            resp = bot.get_department_detail(id_)
-            name = resp["data"]["department"]["name"]
-            lark_info["department_detail"][id_] = name
-            return name
+        # 先依次对每一个department_id查询
+        for id_ in ids:
+            # 如果在G中直接返回
+            try:
+                return lark_info["department_detail"][id_]
+            # 反之走lark的api
+            except KeyError:
+                resp = bot.get_department_detail(id_)
+                try:
+                    name = resp["data"]["department"]["name"]
+                # 如果找不到就是没没权限，走下一次
+                except KeyError:
+                    continue
+                else:
+                    lark_info["department_detail"][id_] = name
+                    return name
+        else:
+            return None
     
     def _get_email(self, email):
         if email is not None:
             return email
         return f"{self.author}@moonton.com"
-
-
 
 
 # 当日的年份、月份
@@ -250,11 +270,15 @@ class DateTimeGenerator(object):
 
     def online_dt_range(self):
         """提交规范检查的"""
+        # end = self.zero + datetime.timedelta(hours=20)
+        # start = end - datetime.timedelta(days=1)
+        #
+        # return start, end
+
+        # temp = self.zero + datetime.timedelta(days=1)
+        start = self.zero + datetime.timedelta(hours=8)
         end = self.zero + datetime.timedelta(hours=20)
-        start = end - datetime.timedelta(days=2)
-
         return start, end
-
 
 if __name__ == "__main__":
     bot = SendBot()
@@ -272,7 +296,7 @@ if __name__ == "__main__":
 
     # 封板阶段的
     elif type_ == "cbt":
-        online_c = Controller(branches=["Android-DFJZ_1.2.82.248.1"],  # 检查的分支
+        online_c = Controller(branches=["Android-DFJZ_1.2.84.250.1"],  # 检查的分支
                               excel_name="提交检查.xlsx",  # excel名
                               dt_range=generator.online_dt_range(),  # 检查的时间段
                               scanner=OnlineScanner)
