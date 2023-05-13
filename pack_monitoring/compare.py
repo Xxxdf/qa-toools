@@ -41,8 +41,8 @@ class Compare(object):
         compared = self._compare_df()
         df = self._format_df(compared)
         excel_name = os.path.join(self.work_path, f"Detail_{self.type}.xlsx")
-        if not os.path.exists(excel_name):
-            self._write_2_excel(df, excel_name)
+        # if not os.path.exists(excel_name):
+        #     self._write_2_excel(df, excel_name)
         return excel_name
 
     def _write_2_excel(self, df, excel_name):
@@ -315,7 +315,6 @@ class Controller(object):
         com = Compare(new_path=self.path1, old_path=self.path2, type_=type_, work_path=self.folder)
         excel_path = com.resource_compare()
         return excel_path
-
 
     def export_file(self):
         """依次export对应的文件"""
