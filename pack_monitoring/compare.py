@@ -42,7 +42,7 @@ class Compare(object):
         df = self._format_df(compared)
         excel_name = os.path.join(self.work_path, f"Detail_{self.type}.xlsx")
         # if not os.path.exists(excel_name):
-        #     self._write_2_excel(df, excel_name)
+        self._write_2_excel(df, excel_name)
         return excel_name
 
     def _write_2_excel(self, df, excel_name):
