@@ -296,10 +296,11 @@ class LarkBot(object):
 if __name__ == "__main__":
     from operator import itemgetter
     bot = LarkBot()
-    bot.get_chat_id()
-    # resp = bot.get_user_info("v_nahuang")
+    # bot.get_chat_id()
+    # resp = bot.get_user_info("yuansang")
     # user_detail = resp["data"]["user"]
+    # print(json.dumps(user_detail))
     # print(itemgetter(*("name", "department_ids"))(user_detail))
-    # resp = bot.get_department_detail("od-a22d3d3a2858ee9912852ed88e3df998")
-    # print(json.dumps(resp))
+    resp = bot.get_department_detail("od-c7d00454f90af8f19d0f687e394708f3")
+    print(json.dumps(resp))
     # print(json.dumps(bot.get_user_info("o_qingxichen")))

@@ -162,12 +162,21 @@ class ProjectBot(object):
         resp = self.post_request(url=url, head=self.header, body={"work_item_type_key": issue_type})
         return resp
 
+    def get_meta(self, project_key, issue_type):
+        url = f"https://project.feishu.cn/open_api/{project_key}/work_item/{issue_type}/meta"
+        r = requests.get(url=url, headers=self.header)
+        return r
+
 
 if __name__ == "__main__":
     bot = ProjectBot()
     # bot.fetch_all_project()
-    t = bot.fetch_item_detail(project_key="62b069f48eca7d17f05b1bd8", item_type="issue", item_list=[6193693])
-    print(json.dumps(t))
+    # t = bot.fetch_item_detail(project_key="62b069f48eca7d17f05b1bd8", item_type="issue", item_list=[6193693])
+    # print(json.dumps(t))
+    resp = bot.fetch_user_info(param_type="user_keys", value=['7047654050229223425'])
+    print(json.dumps(resp))
+    # resp = bot.get_meta(project_key="mlbb_cn", issue_type="story")
+    # print(resp.text)
     # t = bot.detail_field(project_key="mlbb_cn", issue_type="issue")
     # print(json.dumps(t))
     # bot.fetch_work_flow(project_key="62b069f48eca7d17f05b1bd8", work_type=["story"], item_list=[3305178])
