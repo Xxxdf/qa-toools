@@ -254,8 +254,12 @@ class SendBot(LarkBot):
 
 
 if __name__ == "__main__":
+
+    view_id = sys.argv[1]
+
+
     bot = OperatorBot()
-    view_name = bot.fetch_story_from_view("iSzkFey4R")
+    view_name = bot.fetch_story_from_view(view_id)
     bot.save()
 
     excel_name = f"{view_name}_统计情况.xlsx"
