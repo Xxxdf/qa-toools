@@ -157,8 +157,11 @@ class Write2Excel(object):
 
     def _write_2_excel(self, df, sheet_name):
         """结果写入"""
-        df.to_excel(self.writer, sheet_name=sheet_name, index=False, engine="xlsxwriter")
-        style_df(df, writer_obj=self.writer, sheet_name=sheet_name)
+
+        # 空df不写入
+        if not df.empty:
+            df.to_excel(self.writer, sheet_name=sheet_name, index=False, engine="xlsxwriter")
+            style_df(df, writer_obj=self.writer, sheet_name=sheet_name)
 
     @staticmethod
     def transfer_2_df(list_):
@@ -274,5 +277,5 @@ if __name__ == "__main__":
     #                       content=card)
 
     # QA群
-    send_bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
-                     content=card)
+    # send_bot.send_message(type_="chat_id", id_="oc_3c06136bc6677d050af3c7831fca2efc", msg_type="interactive",
+    #                  content=card)
