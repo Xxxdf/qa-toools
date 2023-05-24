@@ -7,6 +7,7 @@
 import os
 
 import requests
+import datetime
 from lxml import etree
 
 from compare import read_csv
@@ -34,24 +35,29 @@ class Analyser(object):
         self.branch = branch
 
         self.size_dict = dict()
+        today = datetime.datetime.today()
+        self.today = today.strftime("%Y-%m-%d")
 
     def get_pack_size(self):
         r = requests.get(self.url)
         html = etree.HTML(r.text)
+        elements = html.xpath("//td[@class='date']")
+        links = html.xpath("//td[@class='date']/preceding-sibling::td[@class='link']/a")
 
-        for node in html.xpath("//a[contains(@href, 'apk') or contains(@href, 'ipa')]"):
-            attr = dict(node.attrib)
-            title = attr.get("title")
+        # 遍历匹配的元素并进行进一步处理
+        for i in range(1, len(elements)):
+            date = elements[i].text
+            link = links[i].attrib['href']
 
-            # Android包
-            if "aliyun-cnqd09-31.apk" in title:
-                size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.apk")
-                self.size_dict["mlbb_trunk.apk"] = size
+            # 是今天的包
+            if date[:-6] == self.today:
+                if link.endswith("-31.apk"):
+                    size = self._download_file(file_url=self.url + link, file_name="mlbb_trunk.apk")
+                    self.size_dict["mlbb_trunk.apk"] = size
 
-            # IOS包
-            elif "cnqd09-31.ipa" in title:
-                size = self._download_file(file_url=self.url + attr.get("href"), file_name="mlbb_trunk.ipa")
-                self.size_dict["mlbb_trunk.ipa"] = size
+                elif link.endswith("-31.ipa"):
+                    size = self._download_file(file_url=self.url + link, file_name="mlbb_trunk.ipa")
+                    self.size_dict["mlbb_trunk.ipa"] = size
 
     def pack_resource(self, operator_obj):
         """IOS/Android数据写入"""
