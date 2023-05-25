@@ -54,7 +54,6 @@ class SQLOperator(object):
         :param d2:  另一天的datetime
         :return:
         """
-        print(d1, d2)
         table = self.table
         query = self.session.query(table).filter(table.c.Time >= d1,
                                                  table.c.Time <= d2,
@@ -143,8 +142,20 @@ class SQLOperator(object):
 
         return pd.DataFrame(apk_data + ipa_data, columns=["大小", "类型", "日期", "设备"])
 
+    def need_insert(self):
+        """
+        判断是否需要插入数据（如果今天的数据已经存在，那就不用了）
+        :return:
+        """
+        table = self.table
+        query = self.session.query(table.c.Time).order_by(table.c.Time.desc()).first()
+        data_ = query[0].strftime('%Y-%m-%d')
+        today = datetime.date.today().strftime('%Y-%m-%d')
+        return data_ == today
+
 if __name__ == "__main__":
     s = SQLOperator()
-    q = s.fetch_assigned_dates(d1=datetime.date(2023, 4, 17), d2=datetime.date(2023, 4, 28))
-    print(q)
+    # q = s.fetch_assigned_dates(d1=datetime.date(2023, 4, 17), d2=datetime.date(2023, 4, 28))
+    # print(q)
+    s.need_insert()
     # q = s.get_assigned_day(type_="IOS", day=datetime.date(2023, 4, 17))
