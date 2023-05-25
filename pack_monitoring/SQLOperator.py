@@ -151,7 +151,7 @@ class SQLOperator(object):
         query = self.session.query(table.c.Time).order_by(table.c.Time.desc()).first()
         data_ = query[0].strftime('%Y-%m-%d')
         today = datetime.date.today().strftime('%Y-%m-%d')
-        return data_ == today
+        return not data_ == today
 
 if __name__ == "__main__":
     s = SQLOperator()
