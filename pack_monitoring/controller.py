@@ -20,13 +20,14 @@ def insert_2_db():
     a = Analyser(load_res="/data/Document/LoadRes.csv",
                  android_pack="/data/Document/LoadResInPackFile_and.csv",
                  ios_pack="/data/Document/LoadResInPackFile_ios.csv")
+    a.get_pack_size()
     try:
-        a.get_pack_size()
+        a.pack_resource(operator)
     except KeyError:
         print("包体尚未就绪")
         sys.exit(0)
     else:
-        a.pack_resource(operator)
+        return 
 
 
 def draw_image():
@@ -51,13 +52,13 @@ def send_card():
     msg_card = bot.prepare()
 
     send_with_webhook(card=msg_card, url=url1)
-    # send_with_webhook(card=msg_card, url=url2)
+    send_with_webhook(card=msg_card, url=url2)
 
 
 
 if __name__ == "__main__":
     url1 = "https://open.feishu.cn/open-apis/bot/v2/hook/c3daa543-cd29-495f-bac3-bd9ab5329fb1"  # 测试用
-    # url2 = "https://open.feishu.cn/open-apis/bot/v2/hook/f24f00db-1e39-41a4-b19f-43a2117505ce"  # 正式用
+    url2 = "https://open.feishu.cn/open-apis/bot/v2/hook/f24f00db-1e39-41a4-b19f-43a2117505ce"  # 正式用
 
     operator = SQLOperator()
     if not operator.need_insert():
