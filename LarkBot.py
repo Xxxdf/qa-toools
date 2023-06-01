@@ -130,6 +130,7 @@ class LarkBot(object):
         url = f"https://open.feishu.cn/open-apis/drive/v1/import_tasks/{ticket}"
         r = requests.get(headers=self.access_head, url=url)
         dict_r = json.loads(r.text)
+        print(dict_r)
         return dict_r["data"]["result"]["token"]
 
     def create_folder(self, folder_name, folder_token):
@@ -238,11 +239,44 @@ class LarkBot(object):
             elif result == "Not yet":
                 page_token = token
 
+    def download_from_api(self, file_token):
+        url = f"https://open.feishu.cn/open-apis/drive/v1/files/{file_token}/download"
+        r = requests.get(url, headers=self.access_head)
+
     def get_department_detail(self, department_id):
         url = f"https://open.feishu.cn/open-apis/contact/v3/departments/{department_id}"
         r = requests.get(url, headers=self.access_head)
         return r.json()
 
+    def fetch_spreadsheet_info(self, token):
+        """
+        调用飞书api，获取表格的元信息
+        Args:
+            token: 对应文件的token
+
+        Returns: 列数， sheet_id
+
+        """
+        url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{token}/metainfo"
+        r = requests.get(url=url, headers=self.access_head)
+        resp = r.json()
+        if resp["code"] != 0:
+            raise RuntimeError("获取表格的MetaInfo失败！！！")
+
+        return resp["data"]["sheets"]
+
+    def fetch_data_from_sheet(self, token, range_):
+        """
+        调用api， 获取sheet中的数据
+        :param token:    文件的token
+        :param range_:   对应的范围
+        :return:
+        """
+        url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{token}/values/{range_}"
+        r = requests.get(url=url, headers=self.access_head)
+        print(r.text)
+        resp = r.json()
+        return resp["data"]["values"]
 
     def parse_folder_info(self, info):
         """
@@ -296,11 +330,12 @@ class LarkBot(object):
 if __name__ == "__main__":
     from operator import itemgetter
     bot = LarkBot()
+    print(bot.fetch_spreadsheet_info("W1vDsERCUhfw1nt0agCckKm2nWe"))
     # bot.get_chat_id()
     # resp = bot.get_user_info("yuansang")
     # user_detail = resp["data"]["user"]
     # print(json.dumps(user_detail))
     # print(itemgetter(*("name", "department_ids"))(user_detail))
-    resp = bot.get_department_detail("od-c7d00454f90af8f19d0f687e394708f3")
-    print(json.dumps(resp))
+    # resp = bot.get_department_detail("od-c7d00454f90af8f19d0f687e394708f3")
+    # print(json.dumps(resp))
     # print(json.dumps(bot.get_user_info("o_qingxichen")))

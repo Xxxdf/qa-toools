@@ -136,3 +136,7 @@ dmypy.json
 /app_resource/*.apk
 /app_resource/*.ipa
 /app_resource/*.png
+/sdp_compare/temp/result/*
+/pack_monitoring/temp/*
+/sdp_compare/temp/*
+/scan_log/*.xlsx
