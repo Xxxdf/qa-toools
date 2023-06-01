@@ -200,8 +200,8 @@ class PerformanceOperator(HiveOperator):
 
 if __name__ == "__main__":
 
-    start = datetime.date(2023, 5, 25)
-    end = datetime.date(2023, 5, 30)
+    start = datetime.date(2023, 5, 31)
+    end = datetime.date(2023, 5, 31)
     operators = (NetOperator(), PerformanceOperator())
     while start <= end:
         for o in operators:
