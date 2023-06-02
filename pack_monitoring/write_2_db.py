@@ -67,13 +67,15 @@ class Analyser(object):
         apk_detail["Branch"] = self.branch
         apk_detail["Type"] = "Android"
         apk_detail["Total"] = self.size_dict["mlbb_trunk.apk"]
-        operator_obj.insert_data(apk_detail)
 
         # ipa写入
         ipa_detail = self._ios_pack()
         ipa_detail["Branch"] = self.branch
         ipa_detail["Type"] = "IOS"
         ipa_detail["Total"] = self.size_dict["mlbb_trunk.ipa"]
+
+        # 最后再写入数据，避免出现只写入Android而不写入IOS的情况
+        operator_obj.insert_data(apk_detail)
         operator_obj.insert_data(ipa_detail)
 
     # def missing_id(self):
