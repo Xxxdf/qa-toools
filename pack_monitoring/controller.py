@@ -27,7 +27,7 @@ def insert_2_db():
         print("包体尚未就绪")
         sys.exit(0)
     else:
-        return 
+        return
 
 
 def draw_image():
@@ -45,7 +45,6 @@ def draw_image():
     p.draw_multi_plot("d", "IOS")
 
 
-
 def send_card():
     bot = DailyReporter()
     create_excel()
@@ -53,7 +52,6 @@ def send_card():
 
     send_with_webhook(card=msg_card, url=url1)
     send_with_webhook(card=msg_card, url=url2)
-
 
 
 if __name__ == "__main__":
