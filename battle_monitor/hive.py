@@ -206,6 +206,7 @@ if __name__ == "__main__":
     end = yesterday
     operators = (NetOperator(), PerformanceOperator())
     while start <= end:
+        print(start)
         for o in operators:
             o.date = start
             o.date_ = start.strftime("%Y-%m-%d")

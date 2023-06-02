@@ -16,7 +16,6 @@ from LarkBot import LarkBot
 
 s = SQLOperator()
 
-
 class NetBot(LarkBot):
     """发送网络相关数据"""
 
@@ -28,7 +27,7 @@ class NetBot(LarkBot):
         overview, date_ = s.latest_net()
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
-            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",    # QA群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
@@ -161,7 +160,7 @@ class NetBot(LarkBot):
                 },
                 {
                     "tag": "markdown",
-                    "content": "**变化趋势**"
+                    "content": "**过去5天数据**"
                 },
                 {
                     "tag": "img",
@@ -196,7 +195,7 @@ class PerformanceBot(LarkBot):
         overview, date_ = s.latest_performance()
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
-            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",    # QA群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
@@ -464,8 +463,10 @@ class PerformanceBot(LarkBot):
 
 
 if __name__ == "__main__":
+    s.fetch_last_net()
     net_ = NetBot()
     net_.send()
 
-    # performance_ = PerformanceBot()
-    # performance_.send()
+    s.fetch_last_performance()
+    performance_ = PerformanceBot()
+    performance_.send()
