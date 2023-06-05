@@ -165,7 +165,7 @@ class DrawNet(DrawBase):
         df = pd.DataFrame(used, columns=self.columns)
         df["无卡顿局400"] = df["无卡顿局400"].apply(lambda x: format(x, '.2%'))
         df["无卡顿局4000"] = df["无卡顿局4000"].apply(lambda x: format(x, '.2%'))
-        return df[["日期", "有效数据(组)", "平均延迟(秒)", "延迟中位数(秒)", "延迟95分位数(秒)", "无卡顿局400",
+        return df[["日期", "有效数据(组)", "平均延迟(毫秒)", "延迟中位数(毫秒)", "延迟95分位数(毫秒)", "无卡顿局400",
                    "无卡顿局4000"]]
 
 
