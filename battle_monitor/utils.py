@@ -172,7 +172,7 @@ class DrawNet(DrawBase):
 class DrawPerformance(DrawBase):
     # 列名
     columns = ["有效数据(组)", "平均帧率", "不稳定帧率", "平均内存(MB)", "小卡均值", "大卡均值", "大卡满足率", "无大卡场次占比",
-               "温度", "每十分钟耗电", "每十分钟耗电小于5占比", "日期"]
+               "温度(℃)", "每十分钟耗电", "每十分钟耗电小于5占比", "日期"]
 
     def draw_logic(self, data):
         table_list = []

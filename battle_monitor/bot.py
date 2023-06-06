@@ -262,7 +262,7 @@ class PerformanceBot(LarkBot):
                             "elements": [
                                 {
                                     "tag": "markdown",
-                                    "content": f"**温度**\n{overview.temperature}",
+                                    "content": f"**温度**\n{overview.temperature}℃",
                                     "text_align": "center"
                                 }
                             ]
@@ -367,7 +367,7 @@ class PerformanceBot(LarkBot):
                             "elements": [
                                 {
                                     "tag": "markdown",
-                                    "content": f"**战斗结束后内存**\n{overview.memory}",
+                                    "content": f"**战斗结束后内存**\n{overview.memory}MB",
                                     "text_align": "center"
                                 }
                             ]
@@ -454,7 +454,7 @@ class PerformanceBot(LarkBot):
             "header": {
                 "template": "blue",
                 "title": {
-                    "content": f"{date_} 性能数据",
+                    "content": f"{date_}性能数据",
                     "tag": "plain_text"
                 }
             }
