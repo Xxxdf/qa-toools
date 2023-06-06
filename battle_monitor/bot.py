@@ -27,8 +27,8 @@ class NetBot(LarkBot):
         overview, date_ = s.latest_net()
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
-            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
-            "https://open.feishu.cn/open-apis/bot/v2/hook/46966a60-9552-4721-b61b-99e7a90c0923"         # 网络群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",    # QA群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/46966a60-9552-4721-b61b-99e7a90c0923"     # 网络群
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
@@ -196,8 +196,8 @@ class PerformanceBot(LarkBot):
         overview, date_ = s.latest_performance()
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
-            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
-            "https://open.feishu.cn/open-apis/bot/v2/hook/73e239fc-cb59-4d95-9b8f-c8fb56ce8c4b"         # 性能群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",     # QA群
+            # "https://open.feishu.cn/open-apis/bot/v2/hook/73e239fc-cb59-4d95-9b8f-c8fb56ce8c4b"      # 性能
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
@@ -213,6 +213,14 @@ class PerformanceBot(LarkBot):
                 {
                     "tag": "note",
                     "elements": [
+                        {
+                            "tag": "img",
+                            "img_key": "img_v2_30798a98-35aa-4b4a-bcd0-87e479ce7dcg",
+                            "alt": {
+                                "tag": "plain_text",
+                                "content": "部分设备无法获取机型信息，故无法进行分类"
+                            }
+                        },
                         {
                             "tag": "plain_text",
                             "content": f"有效数据：{overview.all_count}组"
@@ -264,7 +272,7 @@ class PerformanceBot(LarkBot):
                             "elements": [
                                 {
                                     "tag": "markdown",
-                                    "content": f"**温度**\n{overview.temperature}℃",
+                                    "content": f"**温度(仅Android)**\n{overview.temperature}℃",
                                     "text_align": "center"
                                 }
                             ]
@@ -456,7 +464,7 @@ class PerformanceBot(LarkBot):
             "header": {
                 "template": "blue",
                 "title": {
-                    "content": f"{date_}性能数据",
+                    "content": f"{date_} 性能数据",
                     "tag": "plain_text"
                 }
             }

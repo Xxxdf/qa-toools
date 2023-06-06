@@ -103,9 +103,9 @@ class PerformanceOperator(HiveOperator):
         ROUND(avg(Pssmemory), 2) as '平均内存',
         ROUND(avg((jankper10min/100)/10*(battletime/60)), 2)  as '小卡均值',
         ROUND(avg((bigjankper10min/100)/10*(battletime/60)), 2) as '大卡均值',
-        (ROUND(SUM(case when bigjankper10min < 100 then 1 else 0 end)/COUNT(*),4)) as '大卡满足率',
+        (ROUND(SUM(case when bigjankper10min <= 300 then 1 else 0 end)/COUNT(*),4)) as '大卡满足率',
         (ROUND(SUM(case when bigjankper10min = 0 then 1 else 0 end)/COUNT(*),4)) as '没大卡',
-        ROUND(avg(cast(temperature as FLOAT)), 2) as '温度'
+        ROUND(avg(if(cast(temperature as double) > 0,cast(temperature as double),null)), 2) as '温度'
         from ml_battle.client_cn_performance
         WHERE
         logymd = '{}' 
@@ -115,8 +115,10 @@ class PerformanceOperator(HiveOperator):
         AND scene_name like "PVP_%%"
         AND client_version like "%%.%%.%%.%%.%%"
         and avgfps>0 and avgfps<=15000
-        and operatingSystem like '%Android OS%' 
         and not is_nan(cast(fps_variance as DOUBLE))
+        and jankper10min >= 0
+        and bigjankper10min >= 0
+        and nowpicturequality in (0,1,2,3,4,5,6,7,8,9)
         {}
         """
 
@@ -159,7 +161,7 @@ class PerformanceOperator(HiveOperator):
         power_data = self._power_data()
         columns = ["count", "fps", "non_fps", "memory", "jank", "big_jank", "big_jank_rate", "not_big_jank",
                    "temperature", "consume", "consume_rate", "quality", "date"]
-        quality = (0, 1, 2, 3, 4)
+        quality = (0, 1, 2, 3, 4)           # 机型配置-所有、低、中、高、极高
         for i, power in enumerate(power_data):
             performance = performance_data[i]
             data = performance + power
@@ -170,10 +172,10 @@ class PerformanceOperator(HiveOperator):
         res = list()
         condition = (
             "",  # 所有的
-            "and realpicturequality = 1",  # 低
-            "and realpicturequality = 2",  # 中
-            "and realpicturequality = 3",  # 高
-            "and realpicturequality = 4"   # 极高
+            "and cast(fixed_score as FLOAT) < 5.7 and cast(fixed_score as FLOAT) > 0",  # 低
+            "and cast(fixed_score as FLOAT) >=5.7 and cast(fixed_score as FLOAT) < 7.4",  # 中
+            "and cast(fixed_score as FLOAT) >=7.4 and cast(fixed_score as FLOAT) <= 9.0",  # 高
+            "and cast(fixed_score as FLOAT) > 9.0"   # 极高
         )
         for filter_ in condition:
             sql = self._performance_sql.format(self.date_, filter_)
@@ -185,17 +187,16 @@ class PerformanceOperator(HiveOperator):
         res = list()
         condition = (
             "",          # 所有的
-            "and b.realpicturequality = 1",     # 低
-            "and b.realpicturequality = 2",     # 中
-            "and b.realpicturequality = 3",     # 高
-            "and b.realpicturequality = 4"      # 极高
+            "and cast(b.fixed_score as FLOAT) < 5.7 and cast(b.fixed_score as FLOAT) > 0",     # 低
+            "and cast(b.fixed_score as FLOAT) >=5.7 and cast(b.fixed_score as FLOAT) < 7.4",     # 中
+            "and cast(b.fixed_score as FLOAT) >=7.4 and cast(b.fixed_score as FLOAT) <= 9.0",     # 高
+            "and cast(b.fixed_score as FLOAT) > 9.0"      # 极高
         )
         for filter_ in condition:
             sql = self._power_sql.format(self.date_, filter_)
             data = list(self._fetch_value(sql)[0])
             res.append(data)
         return res
-
 
 
 if __name__ == "__main__":
@@ -206,7 +207,6 @@ if __name__ == "__main__":
     end = yesterday
     operators = (NetOperator(), PerformanceOperator())
     while start <= end:
-        print(start)
         for o in operators:
             o.date = start
             o.date_ = start.strftime("%Y-%m-%d")
