@@ -28,6 +28,7 @@ class NetBot(LarkBot):
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
             "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/46966a60-9552-4721-b61b-99e7a90c0923"         # 网络群
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
@@ -196,6 +197,7 @@ class PerformanceBot(LarkBot):
         card = self._init_card(overview=overview, date_=date_)
         webhook = (
             "https://open.feishu.cn/open-apis/bot/v2/hook/2a720e38-d282-4986-aa1e-b9661caea791",        # QA群
+            "https://open.feishu.cn/open-apis/bot/v2/hook/73e239fc-cb59-4d95-9b8f-c8fb56ce8c4b"         # 性能群
         )
         for url in webhook:
             body = json.dumps({"msg_type": "interactive", "card": card})
