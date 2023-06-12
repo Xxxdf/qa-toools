@@ -73,9 +73,11 @@ def pack_monitor():
             card = init_card(traceback.format_exc())
             bot.send_message(type_="chat_id", id_="oc_1b2c1c6704cfb1bba458a899072d1c78", msg_type="interactive",
                              content=card)
+            logger.error("执行失败！")
+            logger.error(traceback.format_exc())
             return "failed"
         else:
-            logger.info("收到请求，准备出发任务")
+            logger.info("收到请求，准备触发任务")
             return "success"
 
 
