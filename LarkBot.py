@@ -130,7 +130,6 @@ class LarkBot(object):
         url = f"https://open.feishu.cn/open-apis/drive/v1/import_tasks/{ticket}"
         r = requests.get(headers=self.access_head, url=url)
         dict_r = json.loads(r.text)
-        print(dict_r)
         return dict_r["data"]["result"]["token"]
 
     def create_folder(self, folder_name, folder_token):
@@ -274,9 +273,8 @@ class LarkBot(object):
         """
         url = f"https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/{token}/values/{range_}"
         r = requests.get(url=url, headers=self.access_head)
-        print(r.text)
         resp = r.json()
-        return resp["data"]["values"]
+        return resp["data"]["valueRange"]["values"]
 
     def parse_folder_info(self, info):
         """
