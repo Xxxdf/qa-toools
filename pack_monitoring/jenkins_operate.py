@@ -28,7 +28,8 @@ class InLineError(Exception):
 class JenkinsOperator(object):
     def __init__(self, job_name, para_dict=None):
         # 初始化和Jenkins的连接，有需要的话，换成自己的
-        self.jen = Jenkins(url="http://192.168.115.63:8080/", username="Haoyu", password="fang0611")
+        token = "11e41d3d2da0ff67ca89b2d1bca86937f6"
+        self.jen = Jenkins(url="http://192.168.115.63:8080/", username="Haoyu", password=token)
         self.job_name = job_name
         self.para_dict = para_dict
 
