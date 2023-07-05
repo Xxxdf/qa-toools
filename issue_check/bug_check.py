@@ -19,7 +19,10 @@ from ProjectBot import ProjectBot
 import G
 from LarkBot import LarkBot
 from utils import style_df
+from SQLOperator import SQLOperator
 
+
+s = SQLOperator()
 
 class BugBot(ProjectBot):
     """Bug统计相关的机器人"""
@@ -96,7 +99,7 @@ class BugTraveler(object):
         self._remind_qa = set()
 
     def traversal(self, issue):
-        qa, issue_id, result = None, None, None
+        qa_key, qa, issue_id, result = None, None, None, None
         for field in issue.get("fields"):
             field_key = field.get("field_key")
             # 是否都填写了必填项
@@ -107,13 +110,22 @@ class BugTraveler(object):
             # 报告人
             if field_key == "issue_reporter":
                 qa_key = field.get("field_value")[0]
-                qa = G.qa_dict.get(qa_key)
+                qa = G.all_qa.get(qa_key)
                 self._remind_qa.add(qa[1])
 
             # 单号
             issue_id = issue.get("id")
-        self._data.append([f'=HYPERLINK("https://project.feishu.cn/mlbb_cn/issue/detail/{issue_id}", "#{issue_id}")',
-                          result, qa[0]])
+
+        link = f'=HYPERLINK("https://project.feishu.cn/mlbb_cn/issue/detail/{issue_id}", "#{issue_id}")'
+
+        try:
+            dict_ = {"qa": G.qa_dict["qa_key"], "issue_link": link, "date": datetime.date.today(), "desc": result}
+        except KeyError:
+            pass
+        else:
+            s.insert_data(dict_)
+
+        self._data.append([link, result, qa[0]])
 
     def _check_description(self, description):
         """
@@ -250,7 +262,7 @@ def run():
     if not remind_qa:
         return
 
-    lark.prepare(remind_qa)
+    # lark.prepare(remind_qa)
 
 
 def get_date(dt):
@@ -260,7 +272,7 @@ def get_date(dt):
 if __name__ == "__main__":
     today = datetime.date.today()
     today_dt = get_date(today)
-    last_dt = get_date(today-datetime.timedelta(days=1))
+    last_dt = get_date(today-datetime.timedelta(days=2))
 
     start = datetime.datetime(last_dt[0], last_dt[1], last_dt[2], 19, 30)
     end = datetime.datetime(today_dt[0], today_dt[1], today_dt[2], 19, 30)
