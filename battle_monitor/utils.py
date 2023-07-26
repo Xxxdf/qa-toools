@@ -132,7 +132,7 @@ class DrawBase(object):
 
 class DrawNet(DrawBase):
     # 列名
-    columns = ["有效数据(组)", "平均延迟(毫秒)", "延迟中位数(毫秒)", "延迟95分位数(毫秒)", "无卡顿局400", "无卡顿局4000",
+    columns = ["有效数据(组)", "平均延迟(毫秒)", "延迟中位数(毫秒)", "延迟95分位数(毫秒)", "timedelay<=70占比", "stdping<=500占比",
                "日期"]
 
     def draw_logic(self, data):
@@ -151,7 +151,7 @@ class DrawNet(DrawBase):
             fig.add_trace(table_list[i-1], row=i, col=1)
 
         layout = go.Layout(
-                    width=1000,
+                    width=1200,
                     height=800,
                     margin=dict(l=50, r=50, t=50, b=50)
                 )
@@ -161,12 +161,12 @@ class DrawNet(DrawBase):
     def _build_df(self, data):
         """构造对应的df，方便后续建立表格"""
         array_ = np.array(data)
-        used = array_[:, [1, 2, 3, 4, 5, 6, 8]]
+        used = array_[:, [1, 2, 3, 4, -2, -1, 8]]
         df = pd.DataFrame(used, columns=self.columns)
-        df["无卡顿局400"] = df["无卡顿局400"].apply(lambda x: format(x, '.2%'))
-        df["无卡顿局4000"] = df["无卡顿局4000"].apply(lambda x: format(x, '.2%'))
-        return df[["日期", "有效数据(组)", "平均延迟(毫秒)", "延迟中位数(毫秒)", "延迟95分位数(毫秒)", "无卡顿局400",
-                   "无卡顿局4000"]]
+        df["timedelay<=70占比"] = df["timedelay<=70占比"].apply(lambda x: format(x, '.2%'))
+        df["stdping<=500占比"] = df["stdping<=500占比"].apply(lambda x: format(x, '.2%'))
+        return df[["日期", "有效数据(组)", "平均延迟(毫秒)", "延迟中位数(毫秒)", "延迟95分位数(毫秒)", "timedelay<=70占比",
+                   "stdping<=500占比"]]
 
 
 class DrawPerformance(DrawBase):
@@ -250,6 +250,16 @@ class NetOverview(object):
     def proportion_4000(self):
         """4000占比"""
         return f"{self._all[6]:.2%}"
+
+    @property
+    def rate_timedelay70(self):
+        """timedelay <=70占比"""
+        return f"{self._all[-2]:.2%}"
+
+    @property
+    def rate_std_ping500(self):
+        return f"{self._all[-1]:.2%}"
+
 
     @property
     def wifi_count(self):

@@ -140,7 +140,7 @@ class SQLOperator(object):
 
         overview = utils.NetOverview(all_data=all_, wifi=wifi_[0], mobile=mobile_[0], dual=dual_[0])
 
-        return overview, all_[-1].strftime("%Y-%m-%d")
+        return overview, all_[-3].strftime("%Y-%m-%d")
 
     def latest_performance(self):
         """获取最新的网络数据"""

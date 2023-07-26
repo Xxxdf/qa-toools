@@ -38,8 +38,8 @@ class NetOperator(HiveOperator):
     def __init__(self):
         super(NetOperator, self).__init__()
         # 对应的列名
-        self.column = ["count", "avg_delay", "median_delay", "95_delay", "proportion_4000",
-                       "proportion_400", "type", "date"]
+        self.column = ["count", "avg_delay", "median_delay", "95_delay", "rate_timedelay70",
+                       "rate_stdping500", "type", "date"]
         self.date = None
         self.date_ = None
 
@@ -48,18 +48,16 @@ class NetOperator(HiveOperator):
         ROUND(avg(timedelay), 2) as '平均延迟中位数',
         appx_median(timedelay) as '延迟中位数',
         ROUND(avg(incomingpingover100ms), 2) as '平均延迟95分',
-        (ROUND(SUM(case when incommingVariance < 4000 then 1 else 0 end)/COUNT(accountid),4)) as '无卡顿局占比4000',
-        (ROUND(SUM(case when incommingVariance < 400 then 1 else 0 end)/COUNT(accountid),4)) as '无卡顿局占比400'
-        FROM ml_battle.client_cn_network 
+        (ROUND(SUM(case when timedelay <= 70 then 1 else 0 end)/COUNT(*),3)) as 'rate_timedelay70',
+        (ROUND(SUM(case when stdping <= 500 then 1 else 0 end)/COUNT(*),3)) as 'rate_stdping500'
+        FROM ml_battle.battle_end 
         WHERE 
         logymd = '{}'
         and  timedelay>0                                             
-        AND timedelay<50000                        
-        AND maxtimedelay < 50000                        
+        AND timedelay<50000                                               
         AND movelag<10000     
         and zoneid BETWEEN 1000 and 2000
-        and incommingVariance<100000
-        and incommingVariance>0
+        and stdping < 20000
         {}
         GROUP BY logymd
         """
@@ -67,9 +65,9 @@ class NetOperator(HiveOperator):
     def operate(self):
         condition = (
             ("", "all"),     # 所有的
-            ("and is_wifi_2 = 'True'", "wifi"),     # 使用wifi的
-            ("and is_wifi_2 = 'False'", "mobile"),   # 使用流量的
-            ("and is_wifi_2 = 'Dual'", "dual")       # 使用双通道的
+            ("and wifi = 'True'", "wifi"),     # 使用wifi的
+            ("and wifi = 'False'", "mobile"),   # 使用流量的
+            ("and wifi = 'Dual'", "dual")       # 使用双通道的
         )
         for item in condition:
             self._write_basic(filter_=item[0], type_=item[1])
@@ -82,6 +80,7 @@ class NetOperator(HiveOperator):
         :return:
         """
         sql = self.sql.format(self.date_, filter_)
+
         data = list(self._fetch_value(sql)[0])
         data.extend([type_, self.date])
         operator.insert_net(dict_=dict(zip(self.column, data)))
@@ -201,11 +200,10 @@ class PerformanceOperator(HiveOperator):
 
 if __name__ == "__main__":
 
-    today = datetime.date.today()
-    yesterday = today - datetime.timedelta(days=1)
-    start = yesterday
-    end = yesterday
-    operators = (NetOperator(), PerformanceOperator())
+    start = datetime.date(2023, 7, 20)
+    end = datetime.date(2023, 7, 25)
+    # operators = (NetOperator(), PerformanceOperator())
+    operators = (NetOperator(), )
     while start <= end:
         for o in operators:
             o.date = start

@@ -136,7 +136,7 @@ class NetBot(LarkBot):
                             "elements": [
                                 {
                                     "tag": "markdown",
-                                    "content": f"**无卡顿局400**\n{overview.proportion_400}",
+                                    "content": f"**timedelay≤70占比**\n{overview.rate_timedelay70}",
                                     "text_align": "center"
                                 }
                             ]
@@ -149,7 +149,7 @@ class NetBot(LarkBot):
                             "elements": [
                                 {
                                     "tag": "markdown",
-                                    "content": f"**无卡顿局4000**\n{overview.proportion_4000}",
+                                    "content": f"**stdping≤500占比**\n{overview.rate_std_ping500}",
                                     "text_align": "center"
                                 }
                             ]
