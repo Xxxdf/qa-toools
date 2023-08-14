@@ -20,7 +20,7 @@ TYPE_ = {"-1": "Lua", "0": "UI", "1": "Art", "4": "Table", "5": "Scene", "7": "A
 
 class Analyser(object):
     # 主干所有包体的信息都在这个url里
-    url = "http://192.168.115.210:9880/mobagame/incn/DFJZ_180.1-intest-2019/"
+    url = "http://192.168.116.210:9880/mobagame/incn/DFJZ_180.1-intest-2019/"
 
     def __init__(self, load_res, android_pack, ios_pack, branch="Trunk"):
         """
